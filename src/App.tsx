@@ -9,6 +9,7 @@ import {
   Pencil,
   Save,
   Search,
+  Sprout,
   Tag,
   X,
 } from "lucide-react";
@@ -387,6 +388,47 @@ function App() {
     setDraft(makeDraft(item));
   };
 
+  const sproutIdea = () => {
+    if (!selectedItem || selectedItem.type !== "idea") return;
+
+    const timestamp = nowIso();
+    const articleId = newId();
+    const baseTags = parseTags(draft.tags, "article");
+    const tags = Array.from(new Set(["idea", ...baseTags]));
+    const linkedIds = Array.from(new Set([...draft.linkedIds, selectedItem.id])).filter(
+      (id) => id !== articleId,
+    );
+    const article: WorkItem = {
+      id: articleId,
+      type: "article",
+      title: draft.title.trim() || selectedItem.title,
+      tags,
+      body: draft.body,
+      linkedIds,
+      revisionIds: [],
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    setWorkspace((current) => ({
+      ...current,
+      items: [
+        article,
+        ...current.items.map((item) =>
+          item.id === selectedItem.id
+            ? {
+                ...item,
+                linkedIds: Array.from(new Set([...item.linkedIds, articleId])),
+                updatedAt: timestamp,
+              }
+            : item,
+        ),
+      ],
+    }));
+    setSelectedId(articleId);
+    setDraft(makeDraft(article));
+  };
+
   const toggleLink = (id: string) => {
     setDraft((current) => ({
       ...current,
@@ -463,23 +505,31 @@ function App() {
                 onChange={(event) => setDraft({ ...draft, title: event.currentTarget.value })}
               />
             </div>
-            <div className="segmented-control" aria-label="Document type">
-              <button
-                type="button"
-                className={draft.type === "article" ? "selected" : ""}
-                onClick={() => setDraft({ ...draft, type: "article" })}
-              >
-                <FileText size={16} aria-hidden="true" />
-                article
-              </button>
-              <button
-                type="button"
-                className={draft.type === "idea" ? "selected" : ""}
-                onClick={() => setDraft({ ...draft, type: "idea" })}
-              >
-                <Lightbulb size={16} aria-hidden="true" />
-                idea
-              </button>
+            <div className="editor-actions">
+              <div className="segmented-control" aria-label="Document type">
+                <button
+                  type="button"
+                  className={draft.type === "article" ? "selected" : ""}
+                  onClick={() => setDraft({ ...draft, type: "article" })}
+                >
+                  <FileText size={16} aria-hidden="true" />
+                  article
+                </button>
+                <button
+                  type="button"
+                  className={draft.type === "idea" ? "selected" : ""}
+                  onClick={() => setDraft({ ...draft, type: "idea" })}
+                >
+                  <Lightbulb size={16} aria-hidden="true" />
+                  idea
+                </button>
+              </div>
+              {selectedItem.type === "idea" && (
+                <button className="sprout-button" type="button" onClick={sproutIdea}>
+                  <Sprout size={16} aria-hidden="true" />
+                  記事へ発芽
+                </button>
+              )}
             </div>
           </div>
 

@@ -84,6 +84,7 @@ button {
 
 .icon-button,
 .primary-button,
+.sprout-button,
 .tabs button,
 .segmented-control button,
 .tag-strip button {
@@ -245,6 +246,12 @@ button {
   background: #e7dfd2;
 }
 
+.editor-actions {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
 .segmented-control button,
 .tabs button {
   padding: 7px 10px;
@@ -299,6 +306,13 @@ button {
   padding: 0 14px;
   color: #fffaf2;
   background: #2f6f73;
+}
+
+.sprout-button {
+  padding: 0 12px;
+  color: #2b1d04;
+  background: #f3d17c;
+  border-color: #d6ac4a;
 }
 
 .knowledge-pane {

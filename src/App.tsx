@@ -308,21 +308,47 @@ function App() {
     return [...links, ...revisions];
   }, [workspace.items, workspace.revisions]);
 
-  const saveDraft = (event: FormEvent) => {
+  const updateDraft = (patch: Partial<Omit<Draft, "note">>) => {
+    if (!selectedItem) return;
+
+    const nextDraft = { ...draft, ...patch };
+    const timestamp = nowIso();
+    const tags = parseTags(nextDraft.tags, nextDraft.type);
+
+    setDraft(nextDraft);
+    setWorkspace((current) => ({
+      ...current,
+      items: current.items.map((item) =>
+        item.id === selectedItem.id
+          ? {
+              ...item,
+              title: nextDraft.title.trim() || "Untitled",
+              type: nextDraft.type,
+              tags,
+              body: nextDraft.body,
+              linkedIds: nextDraft.linkedIds.filter((id) => id !== item.id),
+              updatedAt: timestamp,
+            }
+          : item,
+      ),
+    }));
+  };
+
+  const createSnapshot = (event: FormEvent) => {
     event.preventDefault();
     if (!selectedItem) return;
 
     const timestamp = nowIso();
+    const tags = parseTags(draft.tags, draft.type);
     const revision: Revision = {
       id: newId(),
       itemId: selectedItem.id,
-      title: selectedItem.title,
-      tags: selectedItem.tags,
-      body: selectedItem.body,
+      title: draft.title.trim() || "Untitled",
+      tags,
+      body: draft.body,
       note: draft.note.trim() || DEFAULT_REVISION_NOTE,
       createdAt: timestamp,
     };
-    const tags = parseTags(draft.tags, draft.type);
 
     setWorkspace((current) => ({
       items: current.items.map((item) =>
@@ -430,12 +456,11 @@ function App() {
   };
 
   const toggleLink = (id: string) => {
-    setDraft((current) => ({
-      ...current,
-      linkedIds: current.linkedIds.includes(id)
-        ? current.linkedIds.filter((linkedId) => linkedId !== id)
-        : [...current.linkedIds, id],
-    }));
+    const linkedIds = draft.linkedIds.includes(id)
+      ? draft.linkedIds.filter((linkedId) => linkedId !== id)
+      : [...draft.linkedIds, id];
+
+    updateDraft({ linkedIds });
   };
 
   return (
@@ -495,14 +520,14 @@ function App() {
       </aside>
 
       {selectedItem && (
-        <form className="editor-pane" onSubmit={saveDraft}>
+        <form className="editor-pane" onSubmit={createSnapshot}>
           <div className="editor-header">
             <div>
               <label htmlFor="title">Title</label>
               <input
                 id="title"
                 value={draft.title}
-                onChange={(event) => setDraft({ ...draft, title: event.currentTarget.value })}
+                onChange={(event) => updateDraft({ title: event.currentTarget.value })}
               />
             </div>
             <div className="editor-actions">
@@ -510,7 +535,7 @@ function App() {
                 <button
                   type="button"
                   className={draft.type === "article" ? "selected" : ""}
-                  onClick={() => setDraft({ ...draft, type: "article" })}
+                  onClick={() => updateDraft({ type: "article" })}
                 >
                   <FileText size={16} aria-hidden="true" />
                   article
@@ -518,7 +543,7 @@ function App() {
                 <button
                   type="button"
                   className={draft.type === "idea" ? "selected" : ""}
-                  onClick={() => setDraft({ ...draft, type: "idea" })}
+                  onClick={() => updateDraft({ type: "idea" })}
                 >
                   <Lightbulb size={16} aria-hidden="true" />
                   idea
@@ -540,7 +565,7 @@ function App() {
             </span>
             <input
               value={draft.tags}
-              onChange={(event) => setDraft({ ...draft, tags: event.currentTarget.value })}
+              onChange={(event) => updateDraft({ tags: event.currentTarget.value })}
               placeholder="web-novel, draft, chapter-1"
             />
           </label>
@@ -549,7 +574,7 @@ function App() {
             <span>Markdown</span>
             <textarea
               value={draft.body}
-              onChange={(event) => setDraft({ ...draft, body: event.currentTarget.value })}
+              onChange={(event) => updateDraft({ body: event.currentTarget.value })}
               spellCheck={false}
             />
           </label>
@@ -560,12 +585,12 @@ function App() {
               <input
                 value={draft.note}
                 onChange={(event) => setDraft({ ...draft, note: event.currentTarget.value })}
-                placeholder="履歴メモ"
+                placeholder="スナップショット名"
               />
             </label>
             <button className="primary-button" type="submit">
               <Save size={17} aria-hidden="true" />
-              保存して履歴化
+              スナップショットを作成
             </button>
           </div>
         </form>

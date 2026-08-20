@@ -393,11 +393,8 @@ function App() {
 
     const timestamp = nowIso();
     const articleId = newId();
-    const inheritedTags = draft.tags
-      .split(",")
-      .map((tag) => tag.trim().replace(/^#/, ""))
-      .filter(Boolean);
-    const tags = Array.from(new Set(["article", ...selectedItem.tags, ...inheritedTags]));
+    const baseTags = parseTags(draft.tags, "article");
+    const tags = Array.from(new Set(["idea", ...baseTags]));
     const linkedIds = Array.from(new Set([...draft.linkedIds, selectedItem.id])).filter(
       (id) => id !== articleId,
     );

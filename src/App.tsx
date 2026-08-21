@@ -13,7 +13,7 @@ import {
   Tag,
   X,
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 
 type WorkType = "article" | "idea";
@@ -211,8 +211,16 @@ function App() {
   const selectedItem =
     workspace.items.find((item) => item.id === selectedId) ?? workspace.items[0];
 
+  const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace));
+    if (persistTimer.current !== null) clearTimeout(persistTimer.current);
+    persistTimer.current = setTimeout(() => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace));
+    }, 500);
+    return () => {
+      if (persistTimer.current !== null) clearTimeout(persistTimer.current);
+    };
   }, [workspace]);
 
   useEffect(() => {
@@ -584,7 +592,7 @@ function App() {
               <Clock3 size={16} aria-hidden="true" />
               <input
                 value={draft.note}
-                onChange={(event) => setDraft({ ...draft, note: event.currentTarget.value })}
+                onChange={(event) => { const note = event.currentTarget.value; setDraft((prev) => ({ ...prev, note })); }}
                 placeholder="スナップショット名"
               />
             </label>

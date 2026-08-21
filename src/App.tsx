@@ -212,16 +212,24 @@ function App() {
     workspace.items.find((item) => item.id === selectedId) ?? workspace.items[0];
 
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const workspaceRef = useRef(workspace);
+  workspaceRef.current = workspace;
 
   useEffect(() => {
     if (persistTimer.current !== null) clearTimeout(persistTimer.current);
     persistTimer.current = setTimeout(() => {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaceRef.current));
     }, 500);
-    return () => {
-      if (persistTimer.current !== null) clearTimeout(persistTimer.current);
-    };
   }, [workspace]);
+
+  useEffect(() => {
+    return () => {
+      if (persistTimer.current !== null) {
+        clearTimeout(persistTimer.current);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaceRef.current));
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (selectedItem) {

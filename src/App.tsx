@@ -17,6 +17,12 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 
 type WorkType = "article" | "idea";
+type LinkKind = "伏線" | "元ネタ" | "対立" | "派生" | "回収先" | "関連";
+
+type ItemLink = {
+  id: string;
+  kind: LinkKind;
+};
 
 type WorkItem = {
   id: string;
@@ -24,7 +30,7 @@ type WorkItem = {
   title: string;
   tags: string[];
   body: string;
-  linkedIds: string[];
+  links: ItemLink[];
   revisionIds: string[];
   createdAt: string;
   updatedAt: string;
@@ -45,7 +51,7 @@ type Draft = {
   type: WorkType;
   tags: string;
   body: string;
-  linkedIds: string[];
+  links: ItemLink[];
   note: string;
 };
 
@@ -62,8 +68,17 @@ type GraphNode = {
   y: number;
 };
 
+type GraphEdge = {
+  from: string;
+  to: string;
+  kind: "link" | "revision";
+  linkKind?: LinkKind;
+};
+
 const STORAGE_KEY = "storia.workspace.v1";
 const DEFAULT_REVISION_NOTE = "保存前のスナップショット";
+const DEFAULT_LINK_KIND: LinkKind = "関連";
+const LINK_KINDS: LinkKind[] = ["伏線", "元ネタ", "対立", "派生", "回収先", "関連"];
 
 const nowIso = () => new Date().toISOString();
 
@@ -89,6 +104,58 @@ const formatDate = (value: string) =>
     minute: "2-digit",
   }).format(new Date(value));
 
+const isLinkKind = (value: unknown): value is LinkKind =>
+  typeof value === "string" && LINK_KINDS.includes(value as LinkKind);
+
+const normalizeLinks = (item: unknown): ItemLink[] => {
+  const value = item as { links?: unknown; linkedIds?: unknown };
+
+  if (Array.isArray(value.links)) {
+    return value.links
+      .map((link) => {
+        if (typeof link === "string") {
+          return { id: link, kind: DEFAULT_LINK_KIND };
+        }
+        if (link && typeof link === "object") {
+          const candidate = link as { id?: unknown; kind?: unknown };
+          if (typeof candidate.id === "string") {
+            return {
+              id: candidate.id,
+              kind: isLinkKind(candidate.kind) ? candidate.kind : DEFAULT_LINK_KIND,
+            };
+          }
+        }
+        return null;
+      })
+      .filter((link): link is ItemLink => link !== null);
+  }
+
+  if (Array.isArray(value.linkedIds)) {
+    return value.linkedIds
+      .filter((id): id is string => typeof id === "string")
+      .map((id) => ({ id, kind: DEFAULT_LINK_KIND }));
+  }
+
+  return [];
+};
+
+const normalizeState = (state: StoriaState): StoriaState => ({
+  ...state,
+  items: state.items.map(
+    (item): WorkItem => ({
+      id: item.id,
+      type: item.type,
+      title: item.title,
+      tags: item.tags,
+      body: item.body,
+      links: normalizeLinks(item),
+      revisionIds: item.revisionIds,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+    }),
+  ),
+});
+
 const seedState = (): StoriaState => {
   const createdAt = nowIso();
   const articleId = newId();
@@ -111,7 +178,7 @@ const seedState = (): StoriaState => {
           "- 手紙には未来の日付がある",
           "- 物語の終盤で idea ノートと回収する",
         ].join("\n"),
-        linkedIds: [ideaId],
+        links: [{ id: ideaId, kind: "回収先" }],
         revisionIds: [revisionId],
         createdAt,
         updatedAt: createdAt,
@@ -128,7 +195,7 @@ const seedState = (): StoriaState => {
           "",
           "> 読者と作者の境界を物語内の謎にする。",
         ].join("\n"),
-        linkedIds: [articleId],
+        links: [{ id: articleId, kind: "元ネタ" }],
         revisionIds: [],
         createdAt,
         updatedAt: createdAt,
@@ -153,7 +220,7 @@ const makeDraft = (item: WorkItem): Draft => ({
   type: item.type,
   tags: item.tags.filter((tag) => tag !== item.type).join(", "),
   body: item.body,
-  linkedIds: item.linkedIds,
+  links: item.links,
   note: "",
 });
 
@@ -196,7 +263,7 @@ function App() {
     if (!stored) return seedState();
 
     try {
-      return JSON.parse(stored) as StoriaState;
+      return normalizeState(JSON.parse(stored) as StoriaState);
     } catch {
       return seedState();
     }
@@ -307,18 +374,19 @@ function App() {
     return [...itemNodes, ...revisionNodes];
   }, [workspace.items, workspace.revisions]);
 
-  const graphEdges = useMemo(() => {
+  const graphEdges = useMemo<GraphEdge[]>(() => {
     const links = workspace.items.flatMap((item) =>
-      item.linkedIds.map((linkedId) => ({
+      item.links.map((link) => ({
         from: item.id,
-        to: linkedId,
-        kind: "link",
+        to: link.id,
+        kind: "link" as const,
+        linkKind: link.kind,
       })),
     );
     const revisions = workspace.revisions.map((revision) => ({
       from: revision.itemId,
       to: revision.id,
-      kind: "revision",
+      kind: "revision" as const,
     }));
 
     return [...links, ...revisions];
@@ -342,7 +410,7 @@ function App() {
               type: nextDraft.type,
               tags,
               body: nextDraft.body,
-              linkedIds: nextDraft.linkedIds.filter((id) => id !== item.id),
+              links: nextDraft.links.filter((link) => link.id !== item.id),
               updatedAt: timestamp,
             }
           : item,
@@ -367,6 +435,7 @@ function App() {
     };
 
     setWorkspace((current) => ({
+      ...current,
       items: current.items.map((item) =>
         item.id === selectedItem.id
           ? {
@@ -375,7 +444,7 @@ function App() {
               type: draft.type,
               tags,
               body: draft.body,
-              linkedIds: draft.linkedIds.filter((id) => id !== item.id),
+              links: draft.links.filter((link) => link.id !== item.id),
               revisionIds: [...item.revisionIds, revision.id],
               updatedAt: timestamp,
             }
@@ -419,7 +488,7 @@ function App() {
       title: type === "article" ? "新しい記事" : "新しいアイデア",
       tags: [type],
       body: type === "article" ? "# 新しい記事\n\nここから書き始める。" : "# 新しいアイデア\n\n断片を残す。",
-      linkedIds: [],
+      links: [],
       revisionIds: [],
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -437,16 +506,20 @@ function App() {
     const articleId = newId();
     const baseTags = parseTags(draft.tags, "article");
     const tags = Array.from(new Set(["idea", ...baseTags]));
-    const linkedIds = Array.from(new Set([...draft.linkedIds, selectedItem.id])).filter(
-      (id) => id !== articleId,
-    );
+    const links = [
+      ...draft.links,
+      { id: selectedItem.id, kind: "元ネタ" as const },
+    ].filter((link, index, allLinks) => {
+      if (link.id === articleId) return false;
+      return allLinks.findIndex((candidate) => candidate.id === link.id) === index;
+    });
     const article: WorkItem = {
       id: articleId,
       type: "article",
       title: draft.title.trim() || selectedItem.title,
       tags,
       body: draft.body,
-      linkedIds,
+      links,
       revisionIds: [],
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -460,7 +533,10 @@ function App() {
           item.id === selectedItem.id
             ? {
                 ...item,
-                linkedIds: Array.from(new Set([...item.linkedIds, articleId])),
+                links: [
+                  ...item.links.filter((link) => link.id !== articleId),
+                  { id: articleId, kind: "派生" as const },
+                ],
                 updatedAt: timestamp,
               }
             : item,
@@ -472,11 +548,17 @@ function App() {
   };
 
   const toggleLink = (id: string) => {
-    const linkedIds = draft.linkedIds.includes(id)
-      ? draft.linkedIds.filter((linkedId) => linkedId !== id)
-      : [...draft.linkedIds, id];
+    const links = draft.links.some((link) => link.id === id)
+      ? draft.links.filter((link) => link.id !== id)
+      : [...draft.links, { id, kind: DEFAULT_LINK_KIND }];
 
-    updateDraft({ linkedIds });
+    updateDraft({ links });
+  };
+
+  const updateLinkKind = (id: string, kind: LinkKind) => {
+    updateDraft({
+      links: draft.links.map((link) => (link.id === id ? { ...link, kind } : link)),
+    });
   };
 
   return (
@@ -643,7 +725,9 @@ function App() {
                     x2={to.x}
                     y2={to.y}
                     className={edge.kind}
-                  />
+                  >
+                    {edge.linkKind && <title>{edge.linkKind}</title>}
+                  </line>
                 );
               })}
               {graphNodes.map((node) => (
@@ -671,16 +755,32 @@ function App() {
           <div className="link-list">
             {workspace.items
               .filter((item) => item.id !== selectedItem?.id)
-              .map((item) => (
-                <label key={item.id}>
-                  <input
-                    type="checkbox"
-                    checked={draft.linkedIds.includes(item.id)}
-                    onChange={() => toggleLink(item.id)}
-                  />
-                  <span>{item.title}</span>
-                </label>
-              ))}
+              .map((item) => {
+                const link = draft.links.find((candidate) => candidate.id === item.id);
+
+                return (
+                  <label key={item.id}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(link)}
+                      onChange={() => toggleLink(item.id)}
+                    />
+                    <span>{item.title}</span>
+                    <select
+                      value={link?.kind ?? DEFAULT_LINK_KIND}
+                      onChange={(event) => updateLinkKind(item.id, event.currentTarget.value as LinkKind)}
+                      disabled={!link}
+                      aria-label={`${item.title} の関係タイプ`}
+                    >
+                      {LINK_KINDS.map((kind) => (
+                        <option key={kind} value={kind}>
+                          {kind}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                );
+              })}
           </div>
         </div>
 

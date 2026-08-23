@@ -23,6 +23,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -419,14 +420,33 @@ button {
   gap: 9px;
 }
 
-.link-list label {
+.link-row {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr) 112px;
   gap: 8px;
   align-items: center;
   padding: 9px;
   border: 1px solid #e4ddd2;
   border-radius: 8px;
+}
+
+.link-row label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.link-list select {
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid #d8cec0;
+  border-radius: 7px;
+  color: #202124;
+  background: #ffffff;
+}
+
+.link-list select:disabled {
+  color: #8b8174;
+  background: #f4eee4;
 }
 
 .revision-card {

@@ -757,15 +757,17 @@ function App() {
               .filter((item) => item.id !== selectedItem?.id)
               .map((item) => {
                 const link = draft.links.find((candidate) => candidate.id === item.id);
+                const checkboxId = `link-${selectedItem.id}-${item.id}`;
 
                 return (
-                  <label key={item.id}>
+                  <div key={item.id} className="link-row">
                     <input
+                      id={checkboxId}
                       type="checkbox"
                       checked={Boolean(link)}
                       onChange={() => toggleLink(item.id)}
                     />
-                    <span>{item.title}</span>
+                    <label htmlFor={checkboxId}>{item.title}</label>
                     <select
                       value={link?.kind ?? DEFAULT_LINK_KIND}
                       onChange={(event) => updateLinkKind(item.id, event.currentTarget.value as LinkKind)}
@@ -778,7 +780,7 @@ function App() {
                         </option>
                       ))}
                     </select>
-                  </label>
+                  </div>
                 );
               })}
           </div>

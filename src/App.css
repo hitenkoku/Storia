@@ -420,7 +420,7 @@ button {
   gap: 9px;
 }
 
-.link-list label {
+.link-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) 112px;
   gap: 8px;
@@ -430,7 +430,7 @@ button {
   border-radius: 8px;
 }
 
-.link-list span {
+.link-row label {
   min-width: 0;
   overflow-wrap: anywhere;
 }

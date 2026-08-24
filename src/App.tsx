@@ -9,6 +9,7 @@ import {
   Pencil,
   Save,
   Search,
+  Sparkles,
   Sprout,
   Tag,
   X,
@@ -271,7 +272,7 @@ function App() {
   const [selectedId, setSelectedId] = useState(workspace.items[0]?.id ?? "");
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState<Draft>(() => makeDraft(workspace.items[0]));
-  const [view, setView] = useState<"preview" | "graph">("preview");
+  const [view, setView] = useState<"preview" | "graph" | "spark">("preview");
   const [editingRevisionId, setEditingRevisionId] = useState("");
   const [revisionNoteDraft, setRevisionNoteDraft] = useState("");
 
@@ -327,6 +328,63 @@ function App() {
     () => Array.from(new Set(workspace.items.flatMap((item) => item.tags))).sort(),
     [workspace.items],
   );
+
+  const sparkCards = useMemo(() => {
+    if (!selectedItem) return [];
+
+    const title = draft.title.trim() || selectedItem.title || "この断片";
+    const body = draft.body.trim();
+    const lines = body
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const lastLine = lines.length > 0 ? lines[lines.length - 1] : "";
+    const linkedItems = draft.links
+      .map((link) => {
+        const item = workspace.items.find((candidate) => candidate.id === link.id);
+        return item ? { item, kind: link.kind } : null;
+      })
+      .filter((link): link is { item: WorkItem; kind: LinkKind } => link !== null);
+    const unresolvedLinks = linkedItems.filter(({ item }) => {
+      const linkedTitle = item.title.trim();
+      return linkedTitle.length > 0 && !body.includes(linkedTitle);
+    });
+    const conflictLinks = linkedItems.filter(({ kind }) => kind === "対立");
+
+    return [
+      {
+        title: "問い",
+        body:
+          selectedItem.type === "idea"
+            ? `「${title}」が作品になるなら、読者に最初に見せる出来事は何か。`
+            : `この場面で、誰が何を失い、何を隠そうとしているか。`,
+      },
+      {
+        title: "矛盾",
+        body:
+          conflictLinks.length > 0
+            ? `対立リンク: ${conflictLinks
+                .map(({ item }) => item.title)
+                .join("、")}。どちらの主張が本文で強く見えているか見直す。`
+            : linkedItems.length === 0
+              ? "まだ他の素材と接続されていない。元ネタ、回収先、対立相手を1つ足せるか確認する。"
+              : "リンク先との関係はある。本文側にも、その関係が読める手がかりを置けているか確認する。",
+      },
+      {
+        title: "次に書ける一文",
+        body: lastLine
+          ? `直前の「${lastLine.slice(0, 42)}」に対して、逆の反応をする人物を一人置いてみる。`
+          : `「${title}」について、まだ誰にも知られていない事実を一文で書く。`,
+      },
+      {
+        title: "未回収リンク",
+        body:
+          unresolvedLinks.length > 0
+            ? unresolvedLinks.map(({ item, kind }) => `${kind}: ${item.title}`).join(" / ")
+            : "リンク先のタイトルは本文内で触れられているか、リンクがまだない状態です。",
+      },
+    ];
+  }, [draft.body, draft.links, draft.title, selectedItem, workspace.items]);
 
   const graphNodes = useMemo<GraphNode[]>(() => {
     const itemNodes = workspace.items.map((item, index) => {
@@ -704,13 +762,17 @@ function App() {
             <GitBranch size={16} aria-hidden="true" />
             Graph
           </button>
+          <button type="button" className={view === "spark" ? "selected" : ""} onClick={() => setView("spark")}>
+            <Sparkles size={16} aria-hidden="true" />
+            Spark
+          </button>
         </div>
 
         {view === "preview" ? (
           <div className="preview-panel">
             <MarkdownPreview source={draft.body} />
           </div>
-        ) : (
+        ) : view === "graph" ? (
           <div className="graph-panel">
             <svg viewBox="0 0 500 380" role="img" aria-label="LLM Wiki graph">
               {graphEdges.map((edge, index) => {
@@ -744,6 +806,15 @@ function App() {
                 </g>
               ))}
             </svg>
+          </div>
+        ) : (
+          <div className="spark-panel">
+            {sparkCards.map((card) => (
+              <article key={card.title} className="spark-card">
+                <strong>{card.title}</strong>
+                <p>{card.body}</p>
+              </article>
+            ))}
           </div>
         )}
 

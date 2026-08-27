@@ -329,11 +329,20 @@ function App() {
     [workspace.items],
   );
 
+  const itemById = useMemo(
+    () => new Map(workspace.items.map((item) => [item.id, item])),
+    [workspace.items],
+  );
+
+  const normalizeForSearch = (value: string) =>
+    value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+
   const sparkCards = useMemo(() => {
     if (!selectedItem) return [];
 
     const title = draft.title.trim() || selectedItem.title || "この断片";
     const body = draft.body.trim();
+    const normalizedBody = normalizeForSearch(body);
     const lines = body
       .split("\n")
       .map((line) => line.trim())
@@ -341,13 +350,13 @@ function App() {
     const lastLine = lines.length > 0 ? lines[lines.length - 1] : "";
     const linkedItems = draft.links
       .map((link) => {
-        const item = workspace.items.find((candidate) => candidate.id === link.id);
+        const item = itemById.get(link.id);
         return item ? { item, kind: link.kind } : null;
       })
       .filter((link): link is { item: WorkItem; kind: LinkKind } => link !== null);
     const unresolvedLinks = linkedItems.filter(({ item }) => {
-      const linkedTitle = item.title.trim();
-      return linkedTitle.length > 0 && !body.includes(linkedTitle);
+      const linkedTitle = normalizeForSearch(item.title);
+      return linkedTitle.length > 0 && !normalizedBody.includes(linkedTitle);
     });
     const conflictLinks = linkedItems.filter(({ kind }) => kind === "対立");
 
@@ -384,7 +393,7 @@ function App() {
             : "リンク先のタイトルは本文内で触れられているか、リンクがまだない状態です。",
       },
     ];
-  }, [draft.body, draft.links, draft.title, selectedItem, workspace.items]);
+  }, [draft.body, draft.links, draft.title, itemById, selectedItem]);
 
   const graphNodes = useMemo<GraphNode[]>(() => {
     const itemNodes = workspace.items.map((item, index) => {

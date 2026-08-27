@@ -364,7 +364,7 @@ function App() {
       {
         title: "問い",
         body:
-          selectedItem.type === "idea"
+          draft.type === "idea"
             ? `「${title}」が作品になるなら、読者に最初に見せる出来事は何か。`
             : `この場面で、誰が何を失い、何を隠そうとしているか。`,
       },
@@ -393,7 +393,7 @@ function App() {
             : "未回収リンクはありません。リンクがある場合は、本文内でリンク先に触れられています。",
       },
     ];
-  }, [draft.body, draft.links, draft.title, itemById, selectedItem]);
+  }, [draft.body, draft.links, draft.title, draft.type, itemById, selectedItem]);
 
   const graphNodes = useMemo<GraphNode[]>(() => {
     const itemNodes = workspace.items.map((item, index) => {

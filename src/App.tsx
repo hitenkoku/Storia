@@ -335,7 +335,7 @@ function App() {
   );
 
   const normalizeForSearch = (value: string) =>
-    value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+    value.trim().replace(/\s+/g, " ").toLowerCase();
 
   const sparkCards = useMemo(() => {
     if (!selectedItem) return [];
@@ -390,7 +390,7 @@ function App() {
         body:
           unresolvedLinks.length > 0
             ? unresolvedLinks.map(({ item, kind }) => `${kind}: ${item.title}`).join(" / ")
-            : "リンク先のタイトルは本文内で触れられているか、リンクがまだない状態です。",
+            : "未回収リンクはありません。リンクがある場合は、本文内でリンク先に触れられています。",
       },
     ];
   }, [draft.body, draft.links, draft.title, itemById, selectedItem]);

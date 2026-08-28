@@ -325,6 +325,7 @@ button {
 
 .preview-panel,
 .graph-panel,
+.spark-panel,
 .relation-section {
   padding: 16px;
   background: #ffffff;
@@ -404,6 +405,34 @@ button {
   fill: #202124;
   font-size: 12px;
   text-anchor: middle;
+}
+
+.spark-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.spark-card {
+  padding: 11px;
+  border: 1px solid #e4ddd2;
+  border-radius: 8px;
+  background: #fbf8f2;
+}
+
+.spark-card strong,
+.spark-card p {
+  display: block;
+  margin: 0;
+}
+
+.spark-card strong {
+  color: #2f6f73;
+}
+
+.spark-card p {
+  margin-top: 5px;
+  color: #4f463c;
+  line-height: 1.55;
 }
 
 .relation-section h2 {

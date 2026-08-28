@@ -783,7 +783,7 @@ function App() {
           </div>
         ) : view === "graph" ? (
           <div className="graph-panel">
-            <svg viewBox="0 0 500 380" role="img" aria-label="LLM Wiki graph">
+            <svg viewBox="0 0 500 380" role="img" aria-label="Storia graph">
               {graphEdges.map((edge, index) => {
                 const from = graphNodes.find((node) => node.id === edge.from);
                 const to = graphNodes.find((node) => node.id === edge.to);

@@ -18,6 +18,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 
 type WorkType = "article" | "idea";
+type GrowthStatus = "seed" | "sprout" | "draft" | "revised" | "published";
 type LinkKind = "伏線" | "元ネタ" | "対立" | "派生" | "回収先" | "関連";
 
 type ItemLink = {
@@ -28,6 +29,7 @@ type ItemLink = {
 type WorkItem = {
   id: string;
   type: WorkType;
+  growthStatus: GrowthStatus;
   title: string;
   tags: string[];
   body: string;
@@ -50,6 +52,7 @@ type Revision = {
 type Draft = {
   title: string;
   type: WorkType;
+  growthStatus: GrowthStatus;
   tags: string;
   body: string;
   links: ItemLink[];
@@ -80,6 +83,14 @@ const STORAGE_KEY = "storia.workspace.v1";
 const DEFAULT_REVISION_NOTE = "保存前のスナップショット";
 const DEFAULT_LINK_KIND: LinkKind = "関連";
 const LINK_KINDS: LinkKind[] = ["伏線", "元ネタ", "対立", "派生", "回収先", "関連"];
+const GROWTH_STATUSES: GrowthStatus[] = ["seed", "sprout", "draft", "revised", "published"];
+const GROWTH_STATUS_LABELS: Record<GrowthStatus, string> = {
+  seed: "seed",
+  sprout: "sprout",
+  draft: "draft",
+  revised: "revised",
+  published: "published",
+};
 
 const nowIso = () => new Date().toISOString();
 
@@ -97,6 +108,9 @@ const parseTags = (value: string, type: WorkType) => {
   return Array.from(new Set([requiredTag, ...normalized]));
 };
 
+const defaultGrowthStatus = (type: WorkType): GrowthStatus =>
+  type === "idea" ? "seed" : "draft";
+
 const formatDate = (value: string) =>
   new Intl.DateTimeFormat("ja-JP", {
     month: "2-digit",
@@ -107,6 +121,9 @@ const formatDate = (value: string) =>
 
 const isLinkKind = (value: unknown): value is LinkKind =>
   typeof value === "string" && LINK_KINDS.includes(value as LinkKind);
+
+const isGrowthStatus = (value: unknown): value is GrowthStatus =>
+  typeof value === "string" && GROWTH_STATUSES.includes(value as GrowthStatus);
 
 const normalizeLinks = (item: unknown): ItemLink[] => {
   const value = item as { links?: unknown; linkedIds?: unknown };
@@ -146,6 +163,9 @@ const normalizeState = (state: StoriaState): StoriaState => ({
     (item): WorkItem => ({
       id: item.id,
       type: item.type,
+      growthStatus: isGrowthStatus((item as { growthStatus?: unknown }).growthStatus)
+        ? (item as { growthStatus: GrowthStatus }).growthStatus
+        : defaultGrowthStatus(item.type),
       title: item.title,
       tags: item.tags,
       body: item.body,
@@ -168,6 +188,7 @@ const seedState = (): StoriaState => {
       {
         id: articleId,
         type: "article",
+        growthStatus: "draft",
         title: "連載第一話の下書き",
         tags: ["article", "web-novel", "draft"],
         body: [
@@ -187,6 +208,7 @@ const seedState = (): StoriaState => {
       {
         id: ideaId,
         type: "idea",
+        growthStatus: "seed",
         title: "未来から届く手紙",
         tags: ["idea", "plot", "mystery"],
         body: [
@@ -219,6 +241,7 @@ const seedState = (): StoriaState => {
 const makeDraft = (item: WorkItem): Draft => ({
   title: item.title,
   type: item.type,
+  growthStatus: item.growthStatus,
   tags: item.tags.filter((tag) => tag !== item.type).join(", "),
   body: item.body,
   links: item.links,
@@ -310,7 +333,7 @@ function App() {
     if (!term) return workspace.items;
 
     return workspace.items.filter((item) =>
-      [item.title, item.body, ...item.tags].some((value) =>
+      [item.title, item.body, item.growthStatus, ...item.tags].some((value) =>
         value.toLowerCase().includes(term),
       ),
     );
@@ -475,6 +498,7 @@ function App() {
               ...item,
               title: nextDraft.title.trim() || "Untitled",
               type: nextDraft.type,
+              growthStatus: nextDraft.growthStatus,
               tags,
               body: nextDraft.body,
               links: nextDraft.links.filter((link) => link.id !== item.id),
@@ -509,6 +533,7 @@ function App() {
               ...item,
               title: draft.title.trim() || "Untitled",
               type: draft.type,
+              growthStatus: draft.growthStatus,
               tags,
               body: draft.body,
               links: draft.links.filter((link) => link.id !== item.id),
@@ -552,6 +577,7 @@ function App() {
     const item: WorkItem = {
       id,
       type,
+      growthStatus: defaultGrowthStatus(type),
       title: type === "article" ? "新しい記事" : "新しいアイデア",
       tags: [type],
       body: type === "article" ? "# 新しい記事\n\nここから書き始める。" : "# 新しいアイデア\n\n断片を残す。",
@@ -583,6 +609,7 @@ function App() {
     const article: WorkItem = {
       id: articleId,
       type: "article",
+      growthStatus: "draft",
       title: draft.title.trim() || selectedItem.title,
       tags,
       body: draft.body,
@@ -600,6 +627,7 @@ function App() {
           item.id === selectedItem.id
             ? {
                 ...item,
+                growthStatus: item.growthStatus === "seed" ? "sprout" : item.growthStatus,
                 links: [
                   ...item.links.filter((link) => link.id !== articleId),
                   { id: articleId, kind: "派生" as const },
@@ -673,10 +701,15 @@ function App() {
               type="button"
               onClick={() => setSelectedId(item.id)}
             >
-              <span className={`type-pill ${item.type}`}>
-                {item.type === "article" ? <FileText size={14} /> : <Lightbulb size={14} />}
-                {item.type}
-              </span>
+              <div className="item-meta">
+                <span className={`type-pill ${item.type}`}>
+                  {item.type === "article" ? <FileText size={14} /> : <Lightbulb size={14} />}
+                  {item.type}
+                </span>
+                <span className={`growth-pill ${item.growthStatus}`}>
+                  stage: {GROWTH_STATUS_LABELS[item.growthStatus]}
+                </span>
+              </div>
               <strong>{item.title}</strong>
               <small>{formatDate(item.updatedAt)} updated</small>
             </button>
@@ -714,6 +747,21 @@ function App() {
                   idea
                 </button>
               </div>
+              <label className="growth-select">
+                <span>Growth</span>
+                <select
+                  value={draft.growthStatus}
+                  onChange={(event) =>
+                    updateDraft({ growthStatus: event.currentTarget.value as GrowthStatus })
+                  }
+                >
+                  {GROWTH_STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {GROWTH_STATUS_LABELS[status]}
+                    </option>
+                  ))}
+                </select>
+              </label>
               {selectedItem.type === "idea" && (
                 <button className="sprout-button" type="button" onClick={sproutIdea}>
                   <Sprout size={16} aria-hidden="true" />

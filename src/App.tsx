@@ -751,9 +751,12 @@ function App() {
                 <span>Growth</span>
                 <select
                   value={draft.growthStatus}
-                  onChange={(event) =>
-                    updateDraft({ growthStatus: event.currentTarget.value as GrowthStatus })
-                  }
+                  onChange={(event) => {
+                    const nextGrowthStatus = event.currentTarget.value;
+                    if (isGrowthStatus(nextGrowthStatus)) {
+                      updateDraft({ growthStatus: nextGrowthStatus });
+                    }
+                  }}
                 >
                   {GROWTH_STATUSES.map((status) => (
                     <option key={status} value={status}>

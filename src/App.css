@@ -86,6 +86,8 @@ button {
 .icon-button,
 .primary-button,
 .sprout-button,
+.quick-capture button,
+.template-create button,
 .tabs button,
 .segmented-control button,
 .tag-strip button {
@@ -106,6 +108,8 @@ button {
 }
 
 .search-box,
+.quick-capture,
+.template-create label,
 .save-row label {
   display: flex;
   align-items: center;
@@ -118,6 +122,8 @@ button {
 }
 
 .search-box input,
+.quick-capture input,
+.template-create select,
 .save-row input {
   width: 100%;
   min-width: 0;
@@ -125,6 +131,46 @@ button {
   outline: 0;
   color: inherit;
   background: transparent;
+}
+
+.quick-capture {
+  margin-bottom: 10px;
+}
+
+.quick-capture button {
+  width: 32px;
+  height: 30px;
+  min-height: 30px;
+  flex: 0 0 auto;
+  color: #222629;
+  background: #f3d17c;
+  border-color: #d6ac4a;
+}
+
+.template-create {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.template-create label {
+  min-height: 40px;
+}
+
+.template-create span {
+  flex: 0 0 auto;
+  color: #c9c0b2;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.template-create button {
+  min-width: 76px;
+  padding: 0 10px;
+  color: #fffaf2;
+  background: #2f6f73;
+  border-color: #24585b;
 }
 
 .tag-strip {
@@ -638,6 +684,14 @@ button {
 
   .segmented-control,
   .growth-select {
+    width: 100%;
+  }
+
+  .template-create {
+    grid-template-columns: 1fr;
+  }
+
+  .template-create button {
     width: 100%;
   }
 }

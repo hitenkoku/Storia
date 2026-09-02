@@ -172,6 +172,13 @@ button {
   color: #c9c0b2;
 }
 
+.item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
 .type-pill {
   display: inline-flex;
   align-items: center;
@@ -190,6 +197,40 @@ button {
 .type-pill.idea {
   color: #2b1d04;
   background: #f3d17c;
+}
+
+.growth-pill {
+  width: fit-content;
+  padding: 3px 7px;
+  border-radius: 7px;
+  color: #f8f4ec;
+  background: #59646b;
+  font-size: 0.76rem;
+}
+
+.growth-pill.seed {
+  color: #173824;
+  background: #b8dfc0;
+}
+
+.growth-pill.sprout {
+  color: #2b1d04;
+  background: #d8cb74;
+}
+
+.growth-pill.draft {
+  color: #14213d;
+  background: #b9d7ea;
+}
+
+.growth-pill.revised {
+  color: #29113f;
+  background: #d4bee9;
+}
+
+.growth-pill.published {
+  color: #3f1b14;
+  background: #efc0a8;
 }
 
 .editor-pane {
@@ -251,6 +292,28 @@ button {
   display: grid;
   gap: 8px;
   justify-items: end;
+}
+
+.growth-select {
+  display: grid;
+  gap: 5px;
+  min-width: 150px;
+}
+
+.growth-select span {
+  color: #675f54;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.growth-select select {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid #d8cec0;
+  border-radius: 8px;
+  color: #202124;
+  background: #ffffff;
 }
 
 .segmented-control button,
@@ -567,5 +630,14 @@ button {
   .editor-pane,
   .knowledge-pane {
     min-height: auto;
+  }
+
+  .editor-actions {
+    justify-items: stretch;
+  }
+
+  .segmented-control,
+  .growth-select {
+    width: 100%;
   }
 }

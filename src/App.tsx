@@ -84,7 +84,10 @@ type GraphEdge = {
 
 const STORAGE_KEY = "storia.workspace.v1";
 const LOCALE_STORAGE_KEY = "storia.locale.v1";
-const DEFAULT_REVISION_NOTE = "保存前のスナップショット";
+const DEFAULT_REVISION_NOTES: Record<Locale, string> = {
+  ja: "保存前のスナップショット",
+  en: "Snapshot before saving",
+};
 const DEFAULT_LINK_KIND: LinkKind = "関連";
 const LINK_KINDS: LinkKind[] = ["伏線", "元ネタ", "対立", "派生", "回収先", "関連"];
 const GROWTH_STATUSES: GrowthStatus[] = ["seed", "sprout", "draft", "revised", "published"];
@@ -144,6 +147,7 @@ const START_TEMPLATE_LABELS: Record<Locale, Record<StartTemplate, string>> = {
 const UI_TEXT = {
   ja: {
     brandSubtitle: "Web小説と記事のための執筆 Wiki",
+    libraryAriaLabel: "Storia ライブラリ",
     localeLabel: "言語",
     addArticle: "記事を追加",
     addIdea: "アイデアを追加",
@@ -154,28 +158,29 @@ const UI_TEXT = {
     create: "作成",
     searchPlaceholder: "タイトル、本文、タグ、成長段階で検索",
     availableTags: "利用できるタグ",
-    updated: "updated",
-    stage: "stage",
-    title: "Title",
+    updated: "更新",
+    stage: "段階",
+    title: "タイトル",
     documentType: "ドキュメント種別",
-    growth: "Growth",
+    growth: "成長段階",
     sproutArticle: "記事へ発芽",
-    tags: "Tags",
+    tags: "タグ",
+    tagsPlaceholder: "web小説, 下書き, 第1章",
     snapshotName: "スナップショット名",
     createSnapshot: "スナップショットを作成",
-    graphAndMetadata: "Knowledge graph and metadata",
-    preview: "Preview",
-    graph: "Graph",
-    spark: "Spark",
-    storiaGraph: "Storia graph",
-    links: "Links",
+    graphAndMetadata: "知識グラフとメタデータ",
+    preview: "プレビュー",
+    graph: "グラフ",
+    spark: "発想",
+    storiaGraph: "Storia グラフ",
+    links: "リンク",
     linkKindLabel: "の関係タイプ",
-    history: "History",
+    history: "履歴",
     save: "保存",
     cancel: "キャンセル",
     editSnapshotName: "スナップショット名を編集",
     emptyHistory: "まだ履歴はありません。",
-    markdownPreviewEmpty: "Markdown preview will appear here.",
+    markdownPreviewEmpty: "Markdown プレビューがここに表示されます。",
     sparkFallbackTitle: "この断片",
     sparkQuestionTitle: "問い",
     sparkConflictTitle: "矛盾",
@@ -197,6 +202,7 @@ const UI_TEXT = {
   },
   en: {
     brandSubtitle: "Writing Wiki for web fiction and articles",
+    libraryAriaLabel: "Storia library",
     localeLabel: "Language",
     addArticle: "Add article",
     addIdea: "Add idea",
@@ -214,6 +220,7 @@ const UI_TEXT = {
     growth: "Growth",
     sproutArticle: "Sprout into article",
     tags: "Tags",
+    tagsPlaceholder: "web-novel, draft, chapter-1",
     snapshotName: "Snapshot name",
     createSnapshot: "Create snapshot",
     graphAndMetadata: "Knowledge graph and metadata",
@@ -817,7 +824,7 @@ function App() {
       title: draft.title.trim() || "Untitled",
       tags,
       body: draft.body,
-      note: draft.note.trim() || DEFAULT_REVISION_NOTE,
+      note: draft.note.trim() || DEFAULT_REVISION_NOTES[locale],
       createdAt: timestamp,
     };
 
@@ -857,7 +864,7 @@ function App() {
     event?.preventDefault();
     if (!editingRevisionId) return;
 
-    const note = revisionNoteDraft.trim() || DEFAULT_REVISION_NOTE;
+    const note = revisionNoteDraft.trim() || DEFAULT_REVISION_NOTES[locale];
     setWorkspace((current) => ({
       ...current,
       revisions: current.revisions.map((revision) =>
@@ -1008,7 +1015,7 @@ function App() {
 
   return (
     <main className="app-shell">
-      <aside className="library-pane" aria-label="Storia library">
+      <aside className="library-pane" aria-label={text.libraryAriaLabel}>
         <div className="brand-block">
           <BookOpen size={28} aria-hidden="true" />
           <div>
@@ -1185,7 +1192,7 @@ function App() {
             <input
               value={draft.tags}
               onChange={(event) => updateDraft({ tags: event.currentTarget.value })}
-              placeholder="web-novel, draft, chapter-1"
+              placeholder={text.tagsPlaceholder}
             />
           </label>
 

@@ -787,9 +787,10 @@ function App() {
           <input
             value={quickCapture}
             onChange={(event) => setQuickCapture(event.currentTarget.value)}
+            aria-label="断片クイックキャプチャ"
             placeholder="一行の断片をすぐ残す"
           />
-          <button type="submit" title="断片を保存">
+          <button type="submit" title="断片を保存" aria-label="断片を保存">
             <Plus size={16} aria-hidden="true" />
           </button>
         </form>

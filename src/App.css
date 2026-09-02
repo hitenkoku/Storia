@@ -138,9 +138,8 @@ button {
 }
 
 .quick-capture button {
-  width: 32px;
-  height: 30px;
-  min-height: 30px;
+  width: 36px;
+  height: 36px;
   flex: 0 0 auto;
   color: #222629;
   background: #f3d17c;

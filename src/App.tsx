@@ -7,6 +7,7 @@ import {
   Lightbulb,
   Link2,
   Pencil,
+  Plus,
   Save,
   Search,
   Sparkles,
@@ -19,6 +20,7 @@ import "./App.css";
 
 type WorkType = "article" | "idea";
 type GrowthStatus = "seed" | "sprout" | "draft" | "revised" | "published";
+type StartTemplate = "blank" | "scene" | "setting" | "question" | "fragment";
 type LinkKind = "伏線" | "元ネタ" | "対立" | "派生" | "回収先" | "関連";
 
 type ItemLink = {
@@ -84,12 +86,65 @@ const DEFAULT_REVISION_NOTE = "保存前のスナップショット";
 const DEFAULT_LINK_KIND: LinkKind = "関連";
 const LINK_KINDS: LinkKind[] = ["伏線", "元ネタ", "対立", "派生", "回収先", "関連"];
 const GROWTH_STATUSES: GrowthStatus[] = ["seed", "sprout", "draft", "revised", "published"];
+const START_TEMPLATE_OPTIONS: StartTemplate[] = ["blank", "scene", "setting", "question", "fragment"];
 const GROWTH_STATUS_LABELS: Record<GrowthStatus, string> = {
   seed: "seed",
   sprout: "sprout",
   draft: "draft",
   revised: "revised",
   published: "published",
+};
+const START_TEMPLATES: Record<
+  StartTemplate,
+  {
+    label: string;
+    type: WorkType;
+    growthStatus: GrowthStatus;
+    title: string;
+    tags: string[];
+    body: string;
+  }
+> = {
+  blank: {
+    label: "白紙",
+    type: "article",
+    growthStatus: "draft",
+    title: "新しい記事",
+    tags: ["article"],
+    body: "# 新しい記事\n\nここから書き始める。",
+  },
+  scene: {
+    label: "場面",
+    type: "article",
+    growthStatus: "draft",
+    title: "新しい場面",
+    tags: ["article", "scene"],
+    body: "# 新しい場面\n\n誰が、どこで、何を失うのか。\n\n## 起きること\n\n- ",
+  },
+  setting: {
+    label: "設定",
+    type: "idea",
+    growthStatus: "seed",
+    title: "新しい設定",
+    tags: ["idea", "setting"],
+    body: "# 新しい設定\n\nこの世界では、何が当たり前で、何が禁じられているのか。",
+  },
+  question: {
+    label: "問い",
+    type: "idea",
+    growthStatus: "seed",
+    title: "新しい問い",
+    tags: ["idea", "question"],
+    body: "# 新しい問い\n\nもし、主人公が一番信じているものが嘘だったら？",
+  },
+  fragment: {
+    label: "断片",
+    type: "idea",
+    growthStatus: "seed",
+    title: "新しい断片",
+    tags: ["idea", "fragment"],
+    body: "# 新しい断片\n\nまだ形になっていない一文や会話をここに置く。",
+  },
 };
 
 const nowIso = () => new Date().toISOString();
@@ -124,6 +179,9 @@ const isLinkKind = (value: unknown): value is LinkKind =>
 
 const isGrowthStatus = (value: unknown): value is GrowthStatus =>
   typeof value === "string" && GROWTH_STATUSES.includes(value as GrowthStatus);
+
+const isStartTemplate = (value: unknown): value is StartTemplate =>
+  typeof value === "string" && START_TEMPLATE_OPTIONS.includes(value as StartTemplate);
 
 const normalizeLinks = (item: unknown): ItemLink[] => {
   const value = item as { links?: unknown; linkedIds?: unknown };
@@ -296,6 +354,8 @@ function App() {
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState<Draft>(() => makeDraft(workspace.items[0]));
   const [view, setView] = useState<"preview" | "graph" | "spark">("preview");
+  const [quickCapture, setQuickCapture] = useState("");
+  const [startTemplate, setStartTemplate] = useState<StartTemplate>("blank");
   const [editingRevisionId, setEditingRevisionId] = useState("");
   const [revisionNoteDraft, setRevisionNoteDraft] = useState("");
 
@@ -571,6 +631,12 @@ function App() {
     cancelEditingRevision();
   };
 
+  const createWorkItem = (item: WorkItem) => {
+    setWorkspace((current) => ({ ...current, items: [item, ...current.items] }));
+    setSelectedId(item.id);
+    setDraft(makeDraft(item));
+  };
+
   const createItem = (type: WorkType) => {
     const timestamp = nowIso();
     const id = newId();
@@ -587,9 +653,50 @@ function App() {
       updatedAt: timestamp,
     };
 
-    setWorkspace((current) => ({ ...current, items: [item, ...current.items] }));
-    setSelectedId(id);
-    setDraft(makeDraft(item));
+    createWorkItem(item);
+  };
+
+  const createFromTemplate = () => {
+    const template = START_TEMPLATES[startTemplate];
+    const timestamp = nowIso();
+    const item: WorkItem = {
+      id: newId(),
+      type: template.type,
+      growthStatus: template.growthStatus,
+      title: template.title,
+      tags: template.tags,
+      body: template.body,
+      links: [],
+      revisionIds: [],
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    createWorkItem(item);
+  };
+
+  const submitQuickCapture = (event: FormEvent) => {
+    event.preventDefault();
+    const text = quickCapture.trim();
+    if (!text) return;
+
+    const timestamp = nowIso();
+    const title = text.length > 36 ? `${text.slice(0, 36)}...` : text;
+    const item: WorkItem = {
+      id: newId(),
+      type: "idea",
+      growthStatus: "seed",
+      title,
+      tags: ["idea", "fragment"],
+      body: `# ${title}\n\n${text}`,
+      links: [],
+      revisionIds: [],
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    createWorkItem(item);
+    setQuickCapture("");
   };
 
   const sproutIdea = () => {
@@ -673,6 +780,43 @@ function App() {
           </button>
           <button className="icon-button" type="button" onClick={() => createItem("idea")} title="アイデアを追加">
             <Lightbulb size={18} aria-hidden="true" />
+          </button>
+        </div>
+
+        <form className="quick-capture" onSubmit={submitQuickCapture}>
+          <input
+            value={quickCapture}
+            onChange={(event) => setQuickCapture(event.currentTarget.value)}
+            aria-label="断片クイックキャプチャ"
+            placeholder="一行の断片をすぐ残す"
+          />
+          <button type="submit" title="断片を保存" aria-label="断片を保存">
+            <Plus size={16} aria-hidden="true" />
+          </button>
+        </form>
+
+        <div className="template-create">
+          <label>
+            <span>開始テンプレート</span>
+            <select
+              value={startTemplate}
+              onChange={(event) => {
+                const nextTemplate = event.currentTarget.value;
+                if (isStartTemplate(nextTemplate)) {
+                  setStartTemplate(nextTemplate);
+                }
+              }}
+            >
+              {START_TEMPLATE_OPTIONS.map((template) => (
+                <option key={template} value={template}>
+                  {START_TEMPLATES[template].label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="button" onClick={createFromTemplate}>
+            <Sparkles size={16} aria-hidden="true" />
+            作成
           </button>
         </div>
 

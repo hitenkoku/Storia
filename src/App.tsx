@@ -21,6 +21,7 @@ import "./App.css";
 type WorkType = "article" | "idea";
 type GrowthStatus = "seed" | "sprout" | "draft" | "revised" | "published";
 type StartTemplate = "blank" | "scene" | "setting" | "question" | "fragment";
+type Locale = "ja" | "en";
 type LinkKind = "伏線" | "元ネタ" | "対立" | "派生" | "回収先" | "関連";
 
 type ItemLink = {
@@ -82,11 +83,13 @@ type GraphEdge = {
 };
 
 const STORAGE_KEY = "storia.workspace.v1";
+const LOCALE_STORAGE_KEY = "storia.locale.v1";
 const DEFAULT_REVISION_NOTE = "保存前のスナップショット";
 const DEFAULT_LINK_KIND: LinkKind = "関連";
 const LINK_KINDS: LinkKind[] = ["伏線", "元ネタ", "対立", "派生", "回収先", "関連"];
 const GROWTH_STATUSES: GrowthStatus[] = ["seed", "sprout", "draft", "revised", "published"];
 const START_TEMPLATE_OPTIONS: StartTemplate[] = ["blank", "scene", "setting", "question", "fragment"];
+const LOCALES: Locale[] = ["ja", "en"];
 const GROWTH_STATUS_LABELS: Record<GrowthStatus, string> = {
   seed: "seed",
   sprout: "sprout",
@@ -94,6 +97,158 @@ const GROWTH_STATUS_LABELS: Record<GrowthStatus, string> = {
   revised: "revised",
   published: "published",
 };
+const TYPE_LABELS: Record<Locale, Record<WorkType, string>> = {
+  ja: {
+    article: "記事",
+    idea: "アイデア",
+  },
+  en: {
+    article: "Article",
+    idea: "Idea",
+  },
+};
+const LINK_KIND_LABELS: Record<Locale, Record<LinkKind, string>> = {
+  ja: {
+    伏線: "伏線",
+    元ネタ: "元ネタ",
+    対立: "対立",
+    派生: "派生",
+    回収先: "回収先",
+    関連: "関連",
+  },
+  en: {
+    伏線: "Foreshadowing",
+    元ネタ: "Source",
+    対立: "Conflict",
+    派生: "Derived",
+    回収先: "Payoff",
+    関連: "Related",
+  },
+};
+const START_TEMPLATE_LABELS: Record<Locale, Record<StartTemplate, string>> = {
+  ja: {
+    blank: "白紙",
+    scene: "場面",
+    setting: "設定",
+    question: "問い",
+    fragment: "断片",
+  },
+  en: {
+    blank: "Blank",
+    scene: "Scene",
+    setting: "Setting",
+    question: "Question",
+    fragment: "Fragment",
+  },
+};
+const UI_TEXT = {
+  ja: {
+    brandSubtitle: "Web小説と記事のための執筆 Wiki",
+    localeLabel: "言語",
+    addArticle: "記事を追加",
+    addIdea: "アイデアを追加",
+    quickCaptureLabel: "断片クイックキャプチャ",
+    quickCapturePlaceholder: "一行の断片をすぐ残す",
+    saveFragment: "断片を保存",
+    startTemplate: "開始テンプレート",
+    create: "作成",
+    searchPlaceholder: "タイトル、本文、タグ、成長段階で検索",
+    availableTags: "利用できるタグ",
+    updated: "updated",
+    stage: "stage",
+    title: "Title",
+    documentType: "ドキュメント種別",
+    growth: "Growth",
+    sproutArticle: "記事へ発芽",
+    tags: "Tags",
+    snapshotName: "スナップショット名",
+    createSnapshot: "スナップショットを作成",
+    graphAndMetadata: "Knowledge graph and metadata",
+    preview: "Preview",
+    graph: "Graph",
+    spark: "Spark",
+    storiaGraph: "Storia graph",
+    links: "Links",
+    linkKindLabel: "の関係タイプ",
+    history: "History",
+    save: "保存",
+    cancel: "キャンセル",
+    editSnapshotName: "スナップショット名を編集",
+    emptyHistory: "まだ履歴はありません。",
+    markdownPreviewEmpty: "Markdown preview will appear here.",
+    sparkFallbackTitle: "この断片",
+    sparkQuestionTitle: "問い",
+    sparkConflictTitle: "矛盾",
+    sparkNextLineTitle: "次に書ける一文",
+    sparkUnresolvedTitle: "未回収リンク",
+    sparkQuestionIdea: (title: string) =>
+      `「${title}」が作品になるなら、読者に最初に見せる出来事は何か。`,
+    sparkQuestionArticle: "この場面で、誰が何を失い、何を隠そうとしているか。",
+    sparkConflictLinks: (titles: string) =>
+      `対立リンク: ${titles}。どちらの主張が本文で強く見えているか見直す。`,
+    sparkNoLinks: "まだ他の素材と接続されていない。元ネタ、回収先、対立相手を1つ足せるか確認する。",
+    sparkLinked: "リンク先との関係はある。本文側にも、その関係が読める手がかりを置けているか確認する。",
+    sparkNextFromLastLine: (line: string) =>
+      `直前の「${line}」に対して、逆の反応をする人物を一人置いてみる。`,
+    sparkNextFromTitle: (title: string) =>
+      `「${title}」について、まだ誰にも知られていない事実を一文で書く。`,
+    sparkNoUnresolved:
+      "未回収リンクはありません。リンクがある場合は、本文内でリンク先に触れられています。",
+  },
+  en: {
+    brandSubtitle: "Writing Wiki for web fiction and articles",
+    localeLabel: "Language",
+    addArticle: "Add article",
+    addIdea: "Add idea",
+    quickCaptureLabel: "Quick capture fragment",
+    quickCapturePlaceholder: "Capture a one-line fragment",
+    saveFragment: "Save fragment",
+    startTemplate: "Start template",
+    create: "Create",
+    searchPlaceholder: "Search by title, body, tags, or growth stage",
+    availableTags: "Available tags",
+    updated: "updated",
+    stage: "stage",
+    title: "Title",
+    documentType: "Document type",
+    growth: "Growth",
+    sproutArticle: "Sprout into article",
+    tags: "Tags",
+    snapshotName: "Snapshot name",
+    createSnapshot: "Create snapshot",
+    graphAndMetadata: "Knowledge graph and metadata",
+    preview: "Preview",
+    graph: "Graph",
+    spark: "Spark",
+    storiaGraph: "Storia graph",
+    links: "Links",
+    linkKindLabel: " relationship type",
+    history: "History",
+    save: "Save",
+    cancel: "Cancel",
+    editSnapshotName: "Edit snapshot name",
+    emptyHistory: "No history yet.",
+    markdownPreviewEmpty: "Markdown preview will appear here.",
+    sparkFallbackTitle: "this fragment",
+    sparkQuestionTitle: "Question",
+    sparkConflictTitle: "Conflict",
+    sparkNextLineTitle: "Next line",
+    sparkUnresolvedTitle: "Unresolved links",
+    sparkQuestionIdea: (title: string) =>
+      `If "${title}" became a finished work, what event should the reader see first?`,
+    sparkQuestionArticle: "In this scene, who loses what, and what are they trying to hide?",
+    sparkConflictLinks: (titles: string) =>
+      `Conflict links: ${titles}. Check which claim currently feels stronger in the body.`,
+    sparkNoLinks: "This piece is not connected to other material yet. Add one source, payoff, or opposing idea.",
+    sparkLinked: "The links are in place. Check whether the body gives readers enough clues to understand those relationships.",
+    sparkNextFromLastLine: (line: string) =>
+      `After "${line}", try adding one person who reacts in the opposite way.`,
+    sparkNextFromTitle: (title: string) =>
+      `Write one sentence about "${title}" that no character knows yet.`,
+    sparkNoUnresolved:
+      "There are no unresolved links. When links exist, their targets are already mentioned in the body.",
+  },
+} satisfies Record<Locale, Record<string, string | ((value: string) => string)>>;
 const START_TEMPLATES: Record<
   StartTemplate,
   {
@@ -146,6 +301,70 @@ const START_TEMPLATES: Record<
     body: "# 新しい断片\n\nまだ形になっていない一文や会話をここに置く。",
   },
 };
+const EN_START_TEMPLATES: typeof START_TEMPLATES = {
+  blank: {
+    label: "Blank",
+    type: "article",
+    growthStatus: "draft",
+    title: "New article",
+    tags: ["article"],
+    body: "# New article\n\nStart writing here.",
+  },
+  scene: {
+    label: "Scene",
+    type: "article",
+    growthStatus: "draft",
+    title: "New scene",
+    tags: ["article", "scene"],
+    body: "# New scene\n\nWho is here, where are they, and what do they lose?\n\n## What happens\n\n- ",
+  },
+  setting: {
+    label: "Setting",
+    type: "idea",
+    growthStatus: "seed",
+    title: "New setting",
+    tags: ["idea", "setting"],
+    body: "# New setting\n\nWhat is normal in this world, and what is forbidden?",
+  },
+  question: {
+    label: "Question",
+    type: "idea",
+    growthStatus: "seed",
+    title: "New question",
+    tags: ["idea", "question"],
+    body: "# New question\n\nWhat if the thing the protagonist trusts most is a lie?",
+  },
+  fragment: {
+    label: "Fragment",
+    type: "idea",
+    growthStatus: "seed",
+    title: "New fragment",
+    tags: ["idea", "fragment"],
+    body: "# New fragment\n\nPlace an unfinished sentence or line of dialogue here.",
+  },
+};
+const DEFAULT_ITEM_CONTENT: Record<Locale, Record<WorkType, { title: string; body: string }>> = {
+  ja: {
+    article: {
+      title: "新しい記事",
+      body: "# 新しい記事\n\nここから書き始める。",
+    },
+    idea: {
+      title: "新しいアイデア",
+      body: "# 新しいアイデア\n\n断片を残す。",
+    },
+  },
+  en: {
+    article: {
+      title: "New article",
+      body: "# New article\n\nStart writing here.",
+    },
+    idea: {
+      title: "New idea",
+      body: "# New idea\n\nSave the fragment here.",
+    },
+  },
+};
 
 const nowIso = () => new Date().toISOString();
 
@@ -182,6 +401,9 @@ const isGrowthStatus = (value: unknown): value is GrowthStatus =>
 
 const isStartTemplate = (value: unknown): value is StartTemplate =>
   typeof value === "string" && START_TEMPLATE_OPTIONS.includes(value as StartTemplate);
+
+const isLocale = (value: unknown): value is Locale =>
+  typeof value === "string" && LOCALES.includes(value as Locale);
 
 const normalizeLinks = (item: unknown): ItemLink[] => {
   const value = item as { links?: unknown; linkedIds?: unknown };
@@ -306,9 +528,9 @@ const makeDraft = (item: WorkItem): Draft => ({
   note: "",
 });
 
-function MarkdownPreview({ source }: { source: string }) {
+function MarkdownPreview({ emptyText, source }: { emptyText: string; source: string }) {
   if (!source.trim()) {
-    return <p className="muted">Markdown preview will appear here.</p>;
+    return <p className="muted">{emptyText}</p>;
   }
 
   return (
@@ -350,6 +572,10 @@ function App() {
       return seedState();
     }
   });
+  const [locale, setLocale] = useState<Locale>(() => {
+    const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
+    return isLocale(stored) ? stored : "ja";
+  });
   const [selectedId, setSelectedId] = useState(workspace.items[0]?.id ?? "");
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState<Draft>(() => makeDraft(workspace.items[0]));
@@ -361,6 +587,10 @@ function App() {
 
   const selectedItem =
     workspace.items.find((item) => item.id === selectedId) ?? workspace.items[0];
+  const text = UI_TEXT[locale];
+  const typeLabels = TYPE_LABELS[locale];
+  const linkKindLabels = LINK_KIND_LABELS[locale];
+  const startTemplateLabels = START_TEMPLATE_LABELS[locale];
 
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const workspaceRef = useRef(workspace);
@@ -381,6 +611,10 @@ function App() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+  }, [locale]);
 
   useEffect(() => {
     if (selectedItem) {
@@ -423,7 +657,7 @@ function App() {
   const sparkCards = useMemo(() => {
     if (!selectedItem) return [];
 
-    const title = draft.title.trim() || selectedItem.title || "この断片";
+    const title = draft.title.trim() || selectedItem.title || text.sparkFallbackTitle;
     const body = draft.body.trim();
     const normalizedBody = normalizeForSearch(body);
     const lines = body
@@ -445,38 +679,40 @@ function App() {
 
     return [
       {
-        title: "問い",
+        title: text.sparkQuestionTitle,
         body:
           draft.type === "idea"
-            ? `「${title}」が作品になるなら、読者に最初に見せる出来事は何か。`
-            : `この場面で、誰が何を失い、何を隠そうとしているか。`,
+            ? text.sparkQuestionIdea(title)
+            : text.sparkQuestionArticle,
       },
       {
-        title: "矛盾",
+        title: text.sparkConflictTitle,
         body:
           conflictLinks.length > 0
-            ? `対立リンク: ${conflictLinks
-                .map(({ item }) => item.title)
-                .join("、")}。どちらの主張が本文で強く見えているか見直す。`
+            ? text.sparkConflictLinks(
+                conflictLinks.map(({ item }) => item.title).join(locale === "ja" ? "、" : ", "),
+              )
             : linkedItems.length === 0
-              ? "まだ他の素材と接続されていない。元ネタ、回収先、対立相手を1つ足せるか確認する。"
-              : "リンク先との関係はある。本文側にも、その関係が読める手がかりを置けているか確認する。",
+              ? text.sparkNoLinks
+              : text.sparkLinked,
       },
       {
-        title: "次に書ける一文",
+        title: text.sparkNextLineTitle,
         body: lastLine
-          ? `直前の「${lastLine.slice(0, 42)}」に対して、逆の反応をする人物を一人置いてみる。`
-          : `「${title}」について、まだ誰にも知られていない事実を一文で書く。`,
+          ? text.sparkNextFromLastLine(lastLine.slice(0, 42))
+          : text.sparkNextFromTitle(title),
       },
       {
-        title: "未回収リンク",
+        title: text.sparkUnresolvedTitle,
         body:
           unresolvedLinks.length > 0
-            ? unresolvedLinks.map(({ item, kind }) => `${kind}: ${item.title}`).join(" / ")
-            : "未回収リンクはありません。リンクがある場合は、本文内でリンク先に触れられています。",
+            ? unresolvedLinks
+                .map(({ item, kind }) => `${linkKindLabels[kind]}: ${item.title}`)
+                .join(" / ")
+            : text.sparkNoUnresolved,
       },
     ];
-  }, [draft.body, draft.links, draft.title, draft.type, itemById, selectedItem]);
+  }, [draft.body, draft.links, draft.title, draft.type, itemById, linkKindLabels, locale, selectedItem, text]);
 
   const graphNodes = useMemo<GraphNode[]>(() => {
     const itemNodes = workspace.items.map((item, index) => {
@@ -640,13 +876,14 @@ function App() {
   const createItem = (type: WorkType) => {
     const timestamp = nowIso();
     const id = newId();
+    const content = DEFAULT_ITEM_CONTENT[locale][type];
     const item: WorkItem = {
       id,
       type,
       growthStatus: defaultGrowthStatus(type),
-      title: type === "article" ? "新しい記事" : "新しいアイデア",
+      title: content.title,
       tags: [type],
-      body: type === "article" ? "# 新しい記事\n\nここから書き始める。" : "# 新しいアイデア\n\n断片を残す。",
+      body: content.body,
       links: [],
       revisionIds: [],
       createdAt: timestamp,
@@ -657,7 +894,7 @@ function App() {
   };
 
   const createFromTemplate = () => {
-    const template = START_TEMPLATES[startTemplate];
+    const template = (locale === "ja" ? START_TEMPLATES : EN_START_TEMPLATES)[startTemplate];
     const timestamp = nowIso();
     const item: WorkItem = {
       id: newId(),
@@ -763,6 +1000,12 @@ function App() {
     });
   };
 
+  const handleLinkKindChange = (id: string, value: string) => {
+    if (isLinkKind(value)) {
+      updateLinkKind(id, value);
+    }
+  };
+
   return (
     <main className="app-shell">
       <aside className="library-pane" aria-label="Storia library">
@@ -770,15 +1013,31 @@ function App() {
           <BookOpen size={28} aria-hidden="true" />
           <div>
             <h1>Storia</h1>
-            <p>Web小説と記事のための執筆 Wiki</p>
+            <p>{text.brandSubtitle}</p>
           </div>
         </div>
 
+        <label className="locale-switch">
+          <span>{text.localeLabel}</span>
+          <select
+            value={locale}
+            onChange={(event) => {
+              const nextLocale = event.currentTarget.value;
+              if (isLocale(nextLocale)) {
+                setLocale(nextLocale);
+              }
+            }}
+          >
+            <option value="ja">日本語</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+
         <div className="toolbar">
-          <button className="icon-button" type="button" onClick={() => createItem("article")} title="記事を追加">
+          <button className="icon-button" type="button" onClick={() => createItem("article")} title={text.addArticle} aria-label={text.addArticle}>
             <FileText size={18} aria-hidden="true" />
           </button>
-          <button className="icon-button" type="button" onClick={() => createItem("idea")} title="アイデアを追加">
+          <button className="icon-button" type="button" onClick={() => createItem("idea")} title={text.addIdea} aria-label={text.addIdea}>
             <Lightbulb size={18} aria-hidden="true" />
           </button>
         </div>
@@ -787,17 +1046,17 @@ function App() {
           <input
             value={quickCapture}
             onChange={(event) => setQuickCapture(event.currentTarget.value)}
-            aria-label="断片クイックキャプチャ"
-            placeholder="一行の断片をすぐ残す"
+            aria-label={text.quickCaptureLabel}
+            placeholder={text.quickCapturePlaceholder}
           />
-          <button type="submit" title="断片を保存" aria-label="断片を保存">
+          <button type="submit" title={text.saveFragment} aria-label={text.saveFragment}>
             <Plus size={16} aria-hidden="true" />
           </button>
         </form>
 
         <div className="template-create">
           <label>
-            <span>開始テンプレート</span>
+            <span>{text.startTemplate}</span>
             <select
               value={startTemplate}
               onChange={(event) => {
@@ -809,14 +1068,14 @@ function App() {
             >
               {START_TEMPLATE_OPTIONS.map((template) => (
                 <option key={template} value={template}>
-                  {START_TEMPLATES[template].label}
+                  {startTemplateLabels[template]}
                 </option>
               ))}
             </select>
           </label>
           <button type="button" onClick={createFromTemplate}>
             <Sparkles size={16} aria-hidden="true" />
-            作成
+            {text.create}
           </button>
         </div>
 
@@ -825,11 +1084,11 @@ function App() {
           <input
             value={query}
             onChange={(event) => setQuery(event.currentTarget.value)}
-            placeholder="タイトル、本文、タグで検索"
+            placeholder={text.searchPlaceholder}
           />
         </label>
 
-        <div className="tag-strip" aria-label="Available tags">
+        <div className="tag-strip" aria-label={text.availableTags}>
           {allTags.map((tag) => (
             <button key={tag} type="button" onClick={() => setQuery(tag)}>
               #{tag}
@@ -848,14 +1107,14 @@ function App() {
               <div className="item-meta">
                 <span className={`type-pill ${item.type}`}>
                   {item.type === "article" ? <FileText size={14} /> : <Lightbulb size={14} />}
-                  {item.type}
+                  {typeLabels[item.type]}
                 </span>
                 <span className={`growth-pill ${item.growthStatus}`}>
-                  stage: {GROWTH_STATUS_LABELS[item.growthStatus]}
+                  {text.stage}: {GROWTH_STATUS_LABELS[item.growthStatus]}
                 </span>
               </div>
               <strong>{item.title}</strong>
-              <small>{formatDate(item.updatedAt)} updated</small>
+              <small>{formatDate(item.updatedAt)} {text.updated}</small>
             </button>
           ))}
         </div>
@@ -865,7 +1124,7 @@ function App() {
         <form className="editor-pane" onSubmit={createSnapshot}>
           <div className="editor-header">
             <div>
-              <label htmlFor="title">Title</label>
+              <label htmlFor="title">{text.title}</label>
               <input
                 id="title"
                 value={draft.title}
@@ -873,14 +1132,14 @@ function App() {
               />
             </div>
             <div className="editor-actions">
-              <div className="segmented-control" aria-label="Document type">
+              <div className="segmented-control" aria-label={text.documentType}>
                 <button
                   type="button"
                   className={draft.type === "article" ? "selected" : ""}
                   onClick={() => updateDraft({ type: "article" })}
                 >
                   <FileText size={16} aria-hidden="true" />
-                  article
+                  {typeLabels.article}
                 </button>
                 <button
                   type="button"
@@ -888,11 +1147,11 @@ function App() {
                   onClick={() => updateDraft({ type: "idea" })}
                 >
                   <Lightbulb size={16} aria-hidden="true" />
-                  idea
+                  {typeLabels.idea}
                 </button>
               </div>
               <label className="growth-select">
-                <span>Growth</span>
+                <span>{text.growth}</span>
                 <select
                   value={draft.growthStatus}
                   onChange={(event) => {
@@ -912,7 +1171,7 @@ function App() {
               {selectedItem.type === "idea" && (
                 <button className="sprout-button" type="button" onClick={sproutIdea}>
                   <Sprout size={16} aria-hidden="true" />
-                  記事へ発芽
+                  {text.sproutArticle}
                 </button>
               )}
             </div>
@@ -921,7 +1180,7 @@ function App() {
           <label className="field-block">
             <span>
               <Tag size={16} aria-hidden="true" />
-              Tags
+              {text.tags}
             </span>
             <input
               value={draft.tags}
@@ -945,40 +1204,40 @@ function App() {
               <input
                 value={draft.note}
                 onChange={(event) => { const note = event.currentTarget.value; setDraft((prev) => ({ ...prev, note })); }}
-                placeholder="スナップショット名"
+                placeholder={text.snapshotName}
               />
             </label>
             <button className="primary-button" type="submit">
               <Save size={17} aria-hidden="true" />
-              スナップショットを作成
+              {text.createSnapshot}
             </button>
           </div>
         </form>
       )}
 
-      <section className="knowledge-pane" aria-label="Knowledge graph and metadata">
+      <section className="knowledge-pane" aria-label={text.graphAndMetadata}>
         <div className="tabs">
           <button type="button" className={view === "preview" ? "selected" : ""} onClick={() => setView("preview")}>
             <BookOpen size={16} aria-hidden="true" />
-            Preview
+            {text.preview}
           </button>
           <button type="button" className={view === "graph" ? "selected" : ""} onClick={() => setView("graph")}>
             <GitBranch size={16} aria-hidden="true" />
-            Graph
+            {text.graph}
           </button>
           <button type="button" className={view === "spark" ? "selected" : ""} onClick={() => setView("spark")}>
             <Sparkles size={16} aria-hidden="true" />
-            Spark
+            {text.spark}
           </button>
         </div>
 
         {view === "preview" ? (
           <div className="preview-panel">
-            <MarkdownPreview source={draft.body} />
+            <MarkdownPreview emptyText={text.markdownPreviewEmpty} source={draft.body} />
           </div>
         ) : view === "graph" ? (
           <div className="graph-panel">
-            <svg viewBox="0 0 500 380" role="img" aria-label="Storia graph">
+            <svg viewBox="0 0 500 380" role="img" aria-label={text.storiaGraph}>
               {graphEdges.map((edge, index) => {
                 const from = graphNodes.find((node) => node.id === edge.from);
                 const to = graphNodes.find((node) => node.id === edge.to);
@@ -1025,7 +1284,7 @@ function App() {
         <div className="relation-section">
           <h2>
             <Link2 size={17} aria-hidden="true" />
-            Links
+            {text.links}
           </h2>
           <div className="link-list">
             {workspace.items
@@ -1045,13 +1304,13 @@ function App() {
                     <label htmlFor={checkboxId}>{item.title}</label>
                     <select
                       value={link?.kind ?? DEFAULT_LINK_KIND}
-                      onChange={(event) => updateLinkKind(item.id, event.currentTarget.value as LinkKind)}
+                      onChange={(event) => handleLinkKindChange(item.id, event.currentTarget.value)}
                       disabled={!link}
-                      aria-label={`${item.title} の関係タイプ`}
+                      aria-label={`${item.title}${text.linkKindLabel}`}
                     >
                       {LINK_KINDS.map((kind) => (
                         <option key={kind} value={kind}>
-                          {kind}
+                          {linkKindLabels[kind]}
                         </option>
                       ))}
                     </select>
@@ -1064,7 +1323,7 @@ function App() {
         <div className="relation-section">
           <h2>
             <Clock3 size={17} aria-hidden="true" />
-            History
+            {text.history}
           </h2>
           <div className="timeline">
             {revisionsForSelected.map((revision) => (
@@ -1080,12 +1339,12 @@ function App() {
                           cancelEditingRevision();
                         }
                       }}
-                      aria-label="スナップショット名"
+                      aria-label={text.snapshotName}
                     />
-                    <button type="submit" title="保存" aria-label="保存">
+                    <button type="submit" title={text.save} aria-label={text.save}>
                       <Check size={15} aria-hidden="true" />
                     </button>
-                    <button type="button" onClick={cancelEditingRevision} title="キャンセル" aria-label="キャンセル">
+                    <button type="button" onClick={cancelEditingRevision} title={text.cancel} aria-label={text.cancel}>
                       <X size={15} aria-hidden="true" />
                     </button>
                   </form>
@@ -1095,8 +1354,8 @@ function App() {
                     <button
                       type="button"
                       onClick={() => startEditingRevision(revision)}
-                      title="スナップショット名を編集"
-                      aria-label="スナップショット名を編集"
+                      title={text.editSnapshotName}
+                      aria-label={text.editSnapshotName}
                     >
                       <Pencil size={14} aria-hidden="true" />
                     </button>
@@ -1106,7 +1365,7 @@ function App() {
                 <p>{revision.title}</p>
               </article>
             ))}
-            {revisionsForSelected.length === 0 && <p className="muted">まだ履歴はありません。</p>}
+            {revisionsForSelected.length === 0 && <p className="muted">{text.emptyHistory}</p>}
           </div>
         </div>
       </section>

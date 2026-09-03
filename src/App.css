@@ -108,6 +108,7 @@ button {
 }
 
 .search-box,
+.locale-switch,
 .quick-capture,
 .template-create label,
 .save-row label {
@@ -122,6 +123,7 @@ button {
 }
 
 .search-box input,
+.locale-switch select,
 .quick-capture input,
 .template-create select,
 .save-row input {
@@ -131,6 +133,17 @@ button {
   outline: 0;
   color: inherit;
   background: transparent;
+}
+
+.locale-switch {
+  margin-top: 14px;
+}
+
+.locale-switch span {
+  flex: 0 0 auto;
+  color: #c9c0b2;
+  font-size: 0.76rem;
+  font-weight: 700;
 }
 
 .quick-capture {

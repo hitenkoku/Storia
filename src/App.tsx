@@ -2,6 +2,7 @@ import {
   BookOpen,
   Check,
   Clock3,
+  CopyPlus,
   FileText,
   GitBranch,
   Lightbulb,
@@ -176,6 +177,13 @@ const UI_TEXT = {
     links: "リンク",
     linkKindLabel: "の関係タイプ",
     history: "履歴",
+    revisionBody: "この版の本文",
+    revisionDiff: "現在版との差分",
+    addedLine: "追加",
+    removedLine: "削除",
+    unchangedLine: "同じ",
+    branchFromRevision: "この版から別展開を作る",
+    branchedTitle: (title: string) => `${title} の別展開`,
     save: "保存",
     cancel: "キャンセル",
     editSnapshotName: "スナップショット名を編集",
@@ -231,6 +239,13 @@ const UI_TEXT = {
     links: "Links",
     linkKindLabel: " relationship type",
     history: "History",
+    revisionBody: "Revision body",
+    revisionDiff: "Diff from current",
+    addedLine: "Added",
+    removedLine: "Removed",
+    unchangedLine: "Same",
+    branchFromRevision: "Branch from this revision",
+    branchedTitle: (title: string) => `${title} branch`,
     save: "Save",
     cancel: "Cancel",
     editSnapshotName: "Edit snapshot name",
@@ -568,6 +583,69 @@ function MarkdownPreview({ emptyText, source }: { emptyText: string; source: str
   );
 }
 
+type DiffLine = {
+  id: string;
+  type: "added" | "removed" | "unchanged";
+  text: string;
+};
+
+const buildLineDiff = (before: string, after: string): DiffLine[] => {
+  const beforeLines = before.split("\n");
+  const afterLines = after.split("\n");
+  const rows = beforeLines.length + 1;
+  const columns = afterLines.length + 1;
+  const table = Array.from({ length: rows }, () => Array<number>(columns).fill(0));
+
+  for (let beforeIndex = beforeLines.length - 1; beforeIndex >= 0; beforeIndex -= 1) {
+    for (let afterIndex = afterLines.length - 1; afterIndex >= 0; afterIndex -= 1) {
+      table[beforeIndex][afterIndex] =
+        beforeLines[beforeIndex] === afterLines[afterIndex]
+          ? table[beforeIndex + 1][afterIndex + 1] + 1
+          : Math.max(table[beforeIndex + 1][afterIndex], table[beforeIndex][afterIndex + 1]);
+    }
+  }
+
+  const lines: DiffLine[] = [];
+  let beforeIndex = 0;
+  let afterIndex = 0;
+
+  while (beforeIndex < beforeLines.length || afterIndex < afterLines.length) {
+    if (
+      beforeIndex < beforeLines.length &&
+      afterIndex < afterLines.length &&
+      beforeLines[beforeIndex] === afterLines[afterIndex]
+    ) {
+      lines.push({
+        id: `${lines.length}-unchanged`,
+        type: "unchanged",
+        text: beforeLines[beforeIndex],
+      });
+      beforeIndex += 1;
+      afterIndex += 1;
+    } else if (
+      afterIndex < afterLines.length &&
+      (beforeIndex === beforeLines.length ||
+        table[beforeIndex][afterIndex + 1] >= table[beforeIndex + 1][afterIndex])
+    ) {
+      lines.push({
+        id: `${lines.length}-added`,
+        type: "added",
+        text: afterLines[afterIndex],
+      });
+      afterIndex += 1;
+    } else if (beforeIndex < beforeLines.length) {
+      lines.push({
+        id: `${lines.length}-removed`,
+        type: "removed",
+        text: beforeLines[beforeIndex],
+      });
+      beforeIndex += 1;
+    }
+  }
+
+  return lines;
+};
+
 function App() {
   const [workspace, setWorkspace] = useState<StoriaState>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -872,6 +950,27 @@ function App() {
       ),
     }));
     cancelEditingRevision();
+  };
+
+  const branchFromRevision = (revision: Revision) => {
+    if (!selectedItem) return;
+
+    const timestamp = nowIso();
+    const itemType = selectedItem.type;
+    const item: WorkItem = {
+      id: newId(),
+      type: itemType,
+      growthStatus: defaultGrowthStatus(itemType),
+      title: text.branchedTitle(revision.title.trim() || selectedItem.title),
+      tags: Array.from(new Set([itemType, ...revision.tags.filter((tag) => tag !== itemType)])),
+      body: revision.body,
+      links: [{ id: selectedItem.id, kind: "派生" }],
+      revisionIds: [],
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    createWorkItem(item);
   };
 
   const createWorkItem = (item: WorkItem) => {
@@ -1360,6 +1459,14 @@ function App() {
                     <strong>{revision.note}</strong>
                     <button
                       type="button"
+                      onClick={() => branchFromRevision(revision)}
+                      title={text.branchFromRevision}
+                      aria-label={text.branchFromRevision}
+                    >
+                      <CopyPlus size={14} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => startEditingRevision(revision)}
                       title={text.editSnapshotName}
                       aria-label={text.editSnapshotName}
@@ -1370,6 +1477,27 @@ function App() {
                 )}
                 <small>{formatDate(revision.createdAt)}</small>
                 <p>{revision.title}</p>
+                <details className="revision-details">
+                  <summary>{text.revisionBody}</summary>
+                  <MarkdownPreview emptyText={text.markdownPreviewEmpty} source={revision.body} />
+                </details>
+                <details className="revision-details diff-details">
+                  <summary>{text.revisionDiff}</summary>
+                  <div className="diff-list">
+                    {buildLineDiff(revision.body, draft.body).map((line) => (
+                      <div key={line.id} className={`diff-line ${line.type}`}>
+                        <span>
+                          {line.type === "added"
+                            ? text.addedLine
+                            : line.type === "removed"
+                              ? text.removedLine
+                              : text.unchangedLine}
+                        </span>
+                        <code>{line.text || " "}</code>
+                      </div>
+                    ))}
+                  </div>
+                </details>
               </article>
             ))}
             {revisionsForSelected.length === 0 && <p className="muted">{text.emptyHistory}</p>}

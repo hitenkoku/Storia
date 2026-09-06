@@ -996,6 +996,23 @@ function App() {
     });
   };
 
+  useEffect(() => {
+    setRevisionDiffCache((current) => {
+      let changed = false;
+      const next = { ...current };
+      for (const revision of revisionsForSelected) {
+        if (!openRevisionDiffs[revision.id]) continue;
+        if (next[revision.id]?.draftBody === draft.body) continue;
+        next[revision.id] = {
+          draftBody: draft.body,
+          lines: buildLineDiff(revision.body, draft.body),
+        };
+        changed = true;
+      }
+      return changed ? next : current;
+    });
+  }, [draft.body, openRevisionDiffs, revisionsForSelected]);
+
   const createWorkItem = (item: WorkItem) => {
     setWorkspace((current) => ({ ...current, items: [item, ...current.items] }));
     setSelectedId(item.id);
@@ -1516,12 +1533,7 @@ function App() {
                 >
                   {(() => {
                     const diff = revisionDiffCache[revision.id];
-                    const diffLines =
-                      diff?.draftBody === draft.body
-                        ? diff.lines
-                        : openRevisionDiffs[revision.id]
-                          ? buildLineDiff(revision.body, draft.body)
-                          : [];
+                    const diffLines = diff?.draftBody === draft.body ? diff.lines : [];
                     return (
                       <>
                         <summary>{text.revisionDiff}</summary>

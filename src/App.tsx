@@ -1503,20 +1503,16 @@ function App() {
                   <summary>{text.revisionBody}</summary>
                   <MarkdownPreview emptyText={text.markdownPreviewEmpty} source={revision.body} />
                 </details>
-                <details className="revision-details diff-details">
+                <details
+                  className="revision-details diff-details"
+                  onToggle={(event) => cacheRevisionDiff(revision, event.currentTarget.open)}
+                >
                   {(() => {
                     const diff = revisionDiffCache[revision.id];
                     const diffLines = diff?.draftBody === draft.body ? diff.lines : [];
                     return (
                       <>
-                        <summary
-                          onClick={(event) => {
-                            const details = event.currentTarget.parentElement as HTMLDetailsElement | null;
-                            cacheRevisionDiff(revision, !(details?.open ?? false));
-                          }}
-                        >
-                          {text.revisionDiff}
-                        </summary>
+                        <summary>{text.revisionDiff}</summary>
                         <div className="diff-list">
                           {diffLines.map((line) => (
                             <div key={line.id} className={`diff-line ${line.type}`}>

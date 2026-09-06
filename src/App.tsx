@@ -669,6 +669,7 @@ function App() {
   const [startTemplate, setStartTemplate] = useState<StartTemplate>("blank");
   const [editingRevisionId, setEditingRevisionId] = useState("");
   const [revisionNoteDraft, setRevisionNoteDraft] = useState("");
+  const [openRevisionDiffs, setOpenRevisionDiffs] = useState<Record<string, boolean>>({});
   const [revisionDiffCache, setRevisionDiffCache] = useState<
     Record<string, { draftBody: string; lines: DiffLine[] }>
   >({});
@@ -1505,11 +1506,22 @@ function App() {
                 </details>
                 <details
                   className="revision-details diff-details"
-                  onToggle={(event) => cacheRevisionDiff(revision, event.currentTarget.open)}
+                  onToggle={(event) => {
+                    const isOpen = event.currentTarget.open;
+                    setOpenRevisionDiffs((current) =>
+                      current[revision.id] === isOpen ? current : { ...current, [revision.id]: isOpen },
+                    );
+                    cacheRevisionDiff(revision, isOpen);
+                  }}
                 >
                   {(() => {
                     const diff = revisionDiffCache[revision.id];
-                    const diffLines = diff?.draftBody === draft.body ? diff.lines : [];
+                    const diffLines =
+                      diff?.draftBody === draft.body
+                        ? diff.lines
+                        : openRevisionDiffs[revision.id]
+                          ? buildLineDiff(revision.body, draft.body)
+                          : [];
                     return (
                       <>
                         <summary>{text.revisionDiff}</summary>

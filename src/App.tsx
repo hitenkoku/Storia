@@ -1291,6 +1291,7 @@ function App() {
                 ref={focusToggleRef}
                 className="focus-toggle"
                 type="button"
+                aria-label={focusMode ? `${text.exitFocusMode} ${text.focusHelp}` : text.focusMode}
                 aria-pressed={focusMode}
                 title={focusMode ? text.focusHelp : undefined}
                 onClick={() => setFocusMode((current) => !current)}

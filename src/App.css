@@ -638,6 +638,74 @@ button {
   margin-top: 4px;
 }
 
+.revision-details {
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid #e4ddd2;
+}
+
+.revision-details summary {
+  color: #5e5549;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.revision-details .markdown-preview {
+  margin-top: 9px;
+  padding: 10px;
+  max-height: 220px;
+  overflow: auto;
+  background: #ffffff;
+  border: 1px solid #ebe3d8;
+  border-radius: 7px;
+}
+
+.diff-list {
+  display: grid;
+  gap: 4px;
+  margin-top: 9px;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.diff-line {
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 6px 7px;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.diff-line span {
+  color: #675f54;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.diff-line code {
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: #202124;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.78rem;
+}
+
+.diff-line.added {
+  background: #eef8f0;
+}
+
+.diff-line.removed {
+  background: #fcefed;
+}
+
+.diff-line.unchanged {
+  background: #f7f4ef;
+}
+
 .revision-card button {
   display: inline-flex;
   align-items: center;

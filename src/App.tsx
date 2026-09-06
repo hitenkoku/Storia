@@ -2,6 +2,7 @@ import {
   BookOpen,
   Check,
   Clock3,
+  CopyPlus,
   FileText,
   GitBranch,
   Lightbulb,
@@ -176,6 +177,13 @@ const UI_TEXT = {
     links: "リンク",
     linkKindLabel: "の関係タイプ",
     history: "履歴",
+    revisionBody: "この版の本文",
+    revisionDiff: "現在版との差分",
+    addedLine: "追加",
+    removedLine: "削除",
+    unchangedLine: "同じ",
+    branchFromRevision: "この版から別展開を作る",
+    branchedTitle: (title: string) => `${title} の別展開`,
     save: "保存",
     cancel: "キャンセル",
     editSnapshotName: "スナップショット名を編集",
@@ -231,6 +239,13 @@ const UI_TEXT = {
     links: "Links",
     linkKindLabel: " relationship type",
     history: "History",
+    revisionBody: "Revision body",
+    revisionDiff: "Diff from current",
+    addedLine: "Added",
+    removedLine: "Removed",
+    unchangedLine: "Same",
+    branchFromRevision: "Branch from this revision",
+    branchedTitle: (title: string) => `${title} branch`,
     save: "Save",
     cancel: "Cancel",
     editSnapshotName: "Edit snapshot name",
@@ -568,6 +583,69 @@ function MarkdownPreview({ emptyText, source }: { emptyText: string; source: str
   );
 }
 
+type DiffLine = {
+  id: string;
+  type: "added" | "removed" | "unchanged";
+  text: string;
+};
+
+const buildLineDiff = (before: string, after: string): DiffLine[] => {
+  const beforeLines = before.split("\n");
+  const afterLines = after.split("\n");
+  const rows = beforeLines.length + 1;
+  const columns = afterLines.length + 1;
+  const table = Array.from({ length: rows }, () => Array<number>(columns).fill(0));
+
+  for (let beforeIndex = beforeLines.length - 1; beforeIndex >= 0; beforeIndex -= 1) {
+    for (let afterIndex = afterLines.length - 1; afterIndex >= 0; afterIndex -= 1) {
+      table[beforeIndex][afterIndex] =
+        beforeLines[beforeIndex] === afterLines[afterIndex]
+          ? table[beforeIndex + 1][afterIndex + 1] + 1
+          : Math.max(table[beforeIndex + 1][afterIndex], table[beforeIndex][afterIndex + 1]);
+    }
+  }
+
+  const lines: DiffLine[] = [];
+  let beforeIndex = 0;
+  let afterIndex = 0;
+
+  while (beforeIndex < beforeLines.length || afterIndex < afterLines.length) {
+    if (
+      beforeIndex < beforeLines.length &&
+      afterIndex < afterLines.length &&
+      beforeLines[beforeIndex] === afterLines[afterIndex]
+    ) {
+      lines.push({
+        id: `${lines.length}-unchanged`,
+        type: "unchanged",
+        text: beforeLines[beforeIndex],
+      });
+      beforeIndex += 1;
+      afterIndex += 1;
+    } else if (
+      afterIndex < afterLines.length &&
+      (beforeIndex === beforeLines.length ||
+        table[beforeIndex][afterIndex + 1] >= table[beforeIndex + 1][afterIndex])
+    ) {
+      lines.push({
+        id: `${lines.length}-added`,
+        type: "added",
+        text: afterLines[afterIndex],
+      });
+      afterIndex += 1;
+    } else if (beforeIndex < beforeLines.length) {
+      lines.push({
+        id: `${lines.length}-removed`,
+        type: "removed",
+        text: beforeLines[beforeIndex],
+      });
+      beforeIndex += 1;
+    }
+  }
+
+  return lines;
+};
+
 function App() {
   const [workspace, setWorkspace] = useState<StoriaState>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -591,6 +669,10 @@ function App() {
   const [startTemplate, setStartTemplate] = useState<StartTemplate>("blank");
   const [editingRevisionId, setEditingRevisionId] = useState("");
   const [revisionNoteDraft, setRevisionNoteDraft] = useState("");
+  const [openRevisionDiffs, setOpenRevisionDiffs] = useState<Record<string, boolean>>({});
+  const [revisionDiffCache, setRevisionDiffCache] = useState<
+    Record<string, { draftBody: string; lines: DiffLine[] }>
+  >({});
 
   const selectedItem =
     workspace.items.find((item) => item.id === selectedId) ?? workspace.items[0];
@@ -873,6 +955,63 @@ function App() {
     }));
     cancelEditingRevision();
   };
+
+  const branchFromRevision = (revision: Revision) => {
+    if (!selectedItem) return;
+
+    const timestamp = nowIso();
+    const itemType: WorkType = revision.tags.includes("article")
+      ? "article"
+      : revision.tags.includes("idea")
+        ? "idea"
+        : selectedItem.type;
+    const item: WorkItem = {
+      id: newId(),
+      type: itemType,
+      growthStatus: defaultGrowthStatus(itemType),
+      title: text.branchedTitle(revision.title.trim() || selectedItem.title),
+      tags: Array.from(new Set([itemType, ...revision.tags.filter((tag) => tag !== itemType)])),
+      body: revision.body,
+      links: [{ id: selectedItem.id, kind: "元ネタ" }],
+      revisionIds: [],
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    createWorkItem(item);
+  };
+
+  const cacheRevisionDiff = (revision: Revision, isOpen: boolean) => {
+    if (!isOpen) return;
+    setRevisionDiffCache((current) => {
+      const cached = current[revision.id];
+      if (cached?.draftBody === draft.body) return current;
+      return {
+        ...current,
+        [revision.id]: {
+          draftBody: draft.body,
+          lines: buildLineDiff(revision.body, draft.body),
+        },
+      };
+    });
+  };
+
+  useEffect(() => {
+    setRevisionDiffCache((current) => {
+      let changed = false;
+      const next = { ...current };
+      for (const revision of revisionsForSelected) {
+        if (!openRevisionDiffs[revision.id]) continue;
+        if (next[revision.id]?.draftBody === draft.body) continue;
+        next[revision.id] = {
+          draftBody: draft.body,
+          lines: buildLineDiff(revision.body, draft.body),
+        };
+        changed = true;
+      }
+      return changed ? next : current;
+    });
+  }, [draft.body, openRevisionDiffs, revisionsForSelected]);
 
   const createWorkItem = (item: WorkItem) => {
     setWorkspace((current) => ({ ...current, items: [item, ...current.items] }));
@@ -1360,6 +1499,14 @@ function App() {
                     <strong>{revision.note}</strong>
                     <button
                       type="button"
+                      onClick={() => branchFromRevision(revision)}
+                      title={text.branchFromRevision}
+                      aria-label={text.branchFromRevision}
+                    >
+                      <CopyPlus size={14} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => startEditingRevision(revision)}
                       title={text.editSnapshotName}
                       aria-label={text.editSnapshotName}
@@ -1370,6 +1517,44 @@ function App() {
                 )}
                 <small>{formatDate(revision.createdAt)}</small>
                 <p>{revision.title}</p>
+                <details className="revision-details">
+                  <summary>{text.revisionBody}</summary>
+                  <MarkdownPreview emptyText={text.markdownPreviewEmpty} source={revision.body} />
+                </details>
+                <details
+                  className="revision-details diff-details"
+                  onToggle={(event) => {
+                    const isOpen = event.currentTarget.open;
+                    setOpenRevisionDiffs((current) =>
+                      current[revision.id] === isOpen ? current : { ...current, [revision.id]: isOpen },
+                    );
+                    cacheRevisionDiff(revision, isOpen);
+                  }}
+                >
+                  {(() => {
+                    const diff = revisionDiffCache[revision.id];
+                    const diffLines = diff?.draftBody === draft.body ? diff.lines : [];
+                    return (
+                      <>
+                        <summary>{text.revisionDiff}</summary>
+                        <div className="diff-list">
+                          {diffLines.map((line) => (
+                            <div key={line.id} className={`diff-line ${line.type}`}>
+                              <span>
+                                {line.type === "added"
+                                  ? text.addedLine
+                                  : line.type === "removed"
+                                    ? text.removedLine
+                                    : text.unchangedLine}
+                              </span>
+                              <code>{line.text || " "}</code>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </details>
               </article>
             ))}
             {revisionsForSelected.length === 0 && <p className="muted">{text.emptyHistory}</p>}

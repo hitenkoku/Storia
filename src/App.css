@@ -775,3 +775,36 @@ button {
     width: 100%;
   }
 }
+.graph-scroll { max-height: 460px; overflow: auto; border: 1px solid #ddd5ca; border-radius: 6px; }
+.graph-panel .graph-scroll svg { display: block; width: auto; height: auto; max-width: none; }
+.graph-panel path { fill: none; stroke-width: 2; }
+.graph-panel path.link { stroke: var(--relation-color); }
+.graph-panel path.revision { stroke: #927025; stroke-dasharray: 5 5; }
+.relation-0 { --relation-color: #8854a0; }
+.relation-1 { --relation-color: #326c97; }
+.relation-2 { --relation-color: #b13e3e; }
+.relation-3 { --relation-color: #34754a; }
+.relation-4 { --relation-color: #ad641d; }
+.relation-5 { --relation-color: #52646c; }
+.graph-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 12px; font-size: 12px; }
+.graph-legend span { display: inline-flex; gap: 5px; align-items: center; }
+.relation-color { width: 18px; border-top: 3px solid var(--relation-color); }
+.graph-panel circle.island-ring { fill: none; stroke: #9a5416; stroke-dasharray: 3 3; stroke-width: 2; }
+.graph-panel g:focus-visible circle { stroke: #151515; stroke-width: 4; }
+.graph-panel circle.revision { cursor: default; }
+.island-list { display: grid; gap: 6px; }
+.island-list button { text-align: start; overflow-wrap: anywhere; }
+.reading-controls { display: flex; gap: 8px; }
+.reading-controls button[aria-pressed="true"] { background: #294e43; color: white; }
+.writing-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.writing-stats dt, .stats-help { font-size: 12px; line-height: 1.6; }
+.writing-stats dd { margin: 4px 0 0; font-size: 20px; font-variant-numeric: tabular-nums; }
+.reader-surface { padding: 20px; background: #fcfaf5; border: 1px solid #ebe4d8; overflow: auto; max-height: 65vh; }
+.reader-surface .markdown-preview { font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; line-height: 2; font-size: 16px; overflow-wrap: anywhere; line-break: strict; }
+.reader-surface .markdown-preview p { margin-bottom: 1.2em; }
+.reader-surface.vertical { writing-mode: vertical-rl; height: 460px; max-height: 65vh; width: 100%; }
+.reader-surface.vertical .markdown-preview { height: 100%; }
+.reader-surface.vertical .markdown-preview p { margin: 0 0 0 1.2em; }
+.reader-surface.vertical blockquote { border-left: 0; border-right: 3px solid #86a873; padding: 0 12px 0 0; }
+.graph-panel, .preview-panel { min-width: 0; }
+.reading-controls button, .island-list button { border: 1px solid #ddd5ca; border-radius: 6px; padding: 7px 10px; background: #faf7f1; color: #202124; }

@@ -669,6 +669,9 @@ function App() {
   const [startTemplate, setStartTemplate] = useState<StartTemplate>("blank");
   const [editingRevisionId, setEditingRevisionId] = useState("");
   const [revisionNoteDraft, setRevisionNoteDraft] = useState("");
+  const [revisionDiffCache, setRevisionDiffCache] = useState<
+    Record<string, { draftBody: string; lines: DiffLine[] }>
+  >({});
 
   const selectedItem =
     workspace.items.find((item) => item.id === selectedId) ?? workspace.items[0];
@@ -956,7 +959,11 @@ function App() {
     if (!selectedItem) return;
 
     const timestamp = nowIso();
-    const itemType = selectedItem.type;
+    const itemType: WorkType = revision.tags.includes("article")
+      ? "article"
+      : revision.tags.includes("idea")
+        ? "idea"
+        : selectedItem.type;
     const item: WorkItem = {
       id: newId(),
       type: itemType,
@@ -964,13 +971,28 @@ function App() {
       title: text.branchedTitle(revision.title.trim() || selectedItem.title),
       tags: Array.from(new Set([itemType, ...revision.tags.filter((tag) => tag !== itemType)])),
       body: revision.body,
-      links: [{ id: selectedItem.id, kind: "派生" }],
+      links: [{ id: selectedItem.id, kind: "元ネタ" }],
       revisionIds: [],
       createdAt: timestamp,
       updatedAt: timestamp,
     };
 
     createWorkItem(item);
+  };
+
+  const cacheRevisionDiff = (revision: Revision, isOpen: boolean) => {
+    if (!isOpen) return;
+    setRevisionDiffCache((current) => {
+      const cached = current[revision.id];
+      if (cached?.draftBody === draft.body) return current;
+      return {
+        ...current,
+        [revision.id]: {
+          draftBody: draft.body,
+          lines: buildLineDiff(revision.body, draft.body),
+        },
+      };
+    });
   };
 
   const createWorkItem = (item: WorkItem) => {
@@ -1482,21 +1504,36 @@ function App() {
                   <MarkdownPreview emptyText={text.markdownPreviewEmpty} source={revision.body} />
                 </details>
                 <details className="revision-details diff-details">
-                  <summary>{text.revisionDiff}</summary>
-                  <div className="diff-list">
-                    {buildLineDiff(revision.body, draft.body).map((line) => (
-                      <div key={line.id} className={`diff-line ${line.type}`}>
-                        <span>
-                          {line.type === "added"
-                            ? text.addedLine
-                            : line.type === "removed"
-                              ? text.removedLine
-                              : text.unchangedLine}
-                        </span>
-                        <code>{line.text || " "}</code>
-                      </div>
-                    ))}
-                  </div>
+                  {(() => {
+                    const diff = revisionDiffCache[revision.id];
+                    const diffLines = diff?.draftBody === draft.body ? diff.lines : [];
+                    return (
+                      <>
+                        <summary
+                          onClick={(event) => {
+                            const details = event.currentTarget.parentElement as HTMLDetailsElement | null;
+                            cacheRevisionDiff(revision, !(details?.open ?? false));
+                          }}
+                        >
+                          {text.revisionDiff}
+                        </summary>
+                        <div className="diff-list">
+                          {diffLines.map((line) => (
+                            <div key={line.id} className={`diff-line ${line.type}`}>
+                              <span>
+                                {line.type === "added"
+                                  ? text.addedLine
+                                  : line.type === "removed"
+                                    ? text.removedLine
+                                    : text.unchangedLine}
+                              </span>
+                              <code>{line.text || " "}</code>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </details>
               </article>
             ))}

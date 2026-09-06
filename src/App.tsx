@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
+import { graphPositions, isolatedItemIds, writingStats } from "./exploration";
 
 type WorkType = "article" | "idea";
 type GrowthStatus = "seed" | "sprout" | "draft" | "revised" | "published";
@@ -174,6 +175,14 @@ const UI_TEXT = {
     graph: "グラフ",
     spark: "発想",
     storiaGraph: "Storia グラフ",
+    islands: "孤島（未接続の素材）",
+    noIslands: "すべての素材が接続されています。",
+    graphHelp: "実線は素材間の関係、破線は履歴。上下・左右にスクロールできます。",
+    horizontal: "横書き", vertical: "縦書き",
+    characters: "文字数", manuscriptPages: "原稿用紙（400字）換算",
+    headings: "見出し数", dialogueRate: "会話文率（概算）",
+    statsHelp: "空白・改行を除く本文の文字数（Markdown記号を含む）。用紙換算は文字数÷400。会話文率は「」・『』内の文字数（括弧を除く）の割合です。見出しはコードブロックを除いて集計します。",
+
     links: "リンク",
     linkKindLabel: "の関係タイプ",
     history: "履歴",
@@ -236,6 +245,14 @@ const UI_TEXT = {
     graph: "Graph",
     spark: "Spark",
     storiaGraph: "Storia graph",
+    islands: "Islands (unconnected material)",
+    noIslands: "All material is connected.",
+    graphHelp: "Solid lines connect material; dashed lines show history. Scroll horizontally or vertically to explore.",
+    horizontal: "Horizontal", vertical: "Vertical",
+    characters: "Characters", manuscriptPages: "400-character pages",
+    headings: "Headings", dialogueRate: "Dialogue (estimate)",
+    statsHelp: "Characters exclude whitespace and include Markdown syntax. Pages = characters / 400. Dialogue is the share inside Japanese quotes, excluding quote marks. Headings exclude fenced code blocks.",
+
     links: "Links",
     linkKindLabel: " relationship type",
     history: "History",
@@ -664,6 +681,7 @@ function App() {
   const [selectedId, setSelectedId] = useState(workspace.items[0]?.id ?? "");
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState<Draft>(() => makeDraft(workspace.items[0]));
+  const [verticalReading, setVerticalReading] = useState(false);
   const [view, setView] = useState<"preview" | "graph" | "spark">("preview");
   const [quickCapture, setQuickCapture] = useState("");
   const [startTemplate, setStartTemplate] = useState<StartTemplate>("blank");
@@ -803,51 +821,20 @@ function App() {
     ];
   }, [draft.body, draft.links, draft.title, draft.type, itemById, linkKindLabels, locale, selectedItem, text]);
 
-  const graphNodes = useMemo<GraphNode[]>(() => {
-    const itemNodes = workspace.items.map((item, index) => {
-      const angle = (Math.PI * 2 * index) / Math.max(workspace.items.length, 1);
-      return {
-        id: item.id,
-        label: item.title,
-        type: item.type,
-        x: 250 + Math.cos(angle) * 160,
-        y: 190 + Math.sin(angle) * 120,
-      };
-    });
-
-    const revisionsByItem = workspace.revisions.reduce<Record<string, Revision[]>>(
-      (groups, revision) => {
-        groups[revision.itemId] = [...(groups[revision.itemId] ?? []), revision];
-        return groups;
-      },
-      {},
-    );
-
-    const revisionNodes = Object.entries(revisionsByItem).flatMap(([itemId, revisions]) => {
-      const parent = itemNodes.find((node) => node.id === itemId);
-      const orderedRevisions = [...revisions].sort((a, b) =>
-        a.createdAt.localeCompare(b.createdAt),
-      );
-
-      return orderedRevisions.map((revision, index) => {
-        const middle = (orderedRevisions.length - 1) / 2;
-        const spread = Math.max(44, 92 - orderedRevisions.length * 4);
-        const xOffset = 76;
-        const yOffset = (index - middle) * spread;
-        const note = revision.note.trim() || "revision";
-
-        return {
-          id: revision.id,
-          label: `${note} ${formatDate(revision.createdAt)}`,
-          type: "revision" as const,
-          x: Math.min(470, Math.max(30, (parent?.x ?? 250) + xOffset)),
-          y: Math.min(350, Math.max(30, (parent?.y ?? 190) + yOffset)),
-        };
-      });
-    });
-
-    return [...itemNodes, ...revisionNodes];
-  }, [workspace.items, workspace.revisions]);
+  const isolatedIds = useMemo(() => isolatedItemIds(workspace.items), [workspace.items]);
+  const graphLayout = useMemo(() => graphPositions(workspace.items, workspace.revisions), [workspace.items, workspace.revisions]);
+  const stats = useMemo(() => writingStats(draft.body), [draft.body]);
+  const graphNodes = useMemo<GraphNode[]>(() => [
+    ...workspace.items.map((item) => ({
+      id: item.id, label: item.title, type: item.type, ...graphLayout.positions.get(item.id)!,
+    })),
+    ...workspace.revisions.filter((revision) => graphLayout.positions.has(revision.id)).map((revision) => ({
+      id: revision.id,
+      label: `${revision.note.trim() || "revision"} ${formatDate(revision.createdAt)}`,
+      type: "revision" as const,
+      ...graphLayout.positions.get(revision.id)!,
+    })),
+  ], [workspace.items, workspace.revisions, graphLayout]);
 
   const graphEdges = useMemo<GraphEdge[]>(() => {
     const links = workspace.items.flatMap((item) =>
@@ -1379,42 +1366,72 @@ function App() {
 
         {view === "preview" ? (
           <div className="preview-panel">
-            <MarkdownPreview emptyText={text.markdownPreviewEmpty} source={draft.body} />
+            <div className="reading-controls" role="group" aria-label={text.preview}>
+              <button type="button" aria-pressed={!verticalReading} onClick={() => setVerticalReading(false)}>{text.horizontal}</button>
+              <button type="button" aria-pressed={verticalReading} onClick={() => setVerticalReading(true)}>{text.vertical}</button>
+            </div>
+            <dl className="writing-stats">
+              <div><dt>{text.characters}</dt><dd>{stats.characters.toLocaleString(locale)}</dd></div>
+              <div><dt>{text.manuscriptPages}</dt><dd>{stats.manuscriptPages.toFixed(1)}</dd></div>
+              <div><dt>{text.headings}</dt><dd>{stats.headings}</dd></div>
+              <div><dt>{text.dialogueRate}</dt><dd>{stats.dialogueRate.toFixed(1)}%</dd></div>
+            </dl>
+            <p className="muted stats-help">{text.statsHelp}</p>
+            <div className={`reader-surface ${verticalReading ? "vertical" : ""}`}>
+              <MarkdownPreview emptyText={text.markdownPreviewEmpty} source={draft.body} />
+            </div>
           </div>
         ) : view === "graph" ? (
           <div className="graph-panel">
-            <svg viewBox="0 0 500 380" role="img" aria-label={text.storiaGraph}>
+            <p className="muted">{text.graphHelp}</p>
+            <div className="graph-legend">
+              {LINK_KINDS.map((kind, index) => <span key={kind}><i className={`relation-color relation-${index}`} />{linkKindLabels[kind]}</span>)}
+            </div>
+            <div className="graph-scroll" tabIndex={0} role="region" aria-label={text.storiaGraph}>
+            <svg width={graphLayout.width} height={graphLayout.height} viewBox={`0 0 ${graphLayout.width} ${graphLayout.height}`} aria-label={text.storiaGraph}>
               {graphEdges.map((edge, index) => {
-                const from = graphNodes.find((node) => node.id === edge.from);
-                const to = graphNodes.find((node) => node.id === edge.to);
-                if (!from || !to) return null;
+                const from = graphLayout.positions.get(edge.from);
+                const to = graphLayout.positions.get(edge.to);
+                if (!from || !to || edge.from === edge.to) return null;
+                const colorIndex = edge.linkKind ? LINK_KINDS.indexOf(edge.linkKind) : -1;
                 return (
-                  <line
-                    key={`${edge.from}-${edge.to}-${index}`}
-                    x1={from.x}
-                    y1={from.y}
-                    x2={to.x}
-                    y2={to.y}
-                    className={edge.kind}
-                  >
-                    {edge.linkKind && <title>{edge.linkKind}</title>}
-                  </line>
+                  <path key={`${edge.from}-${edge.to}-${index}`}
+                    d={edge.kind === "revision"
+                      ? `M ${from.x} ${from.y} Q ${(from.x + to.x) / 2} ${from.y - 45} ${to.x} ${to.y}`
+                      : `M ${from.x} ${from.y} C ${20 + colorIndex * 10} ${from.y}, ${20 + colorIndex * 10} ${to.y}, ${to.x} ${to.y}`}
+                    className={`${edge.kind} relation-${colorIndex}`}>
+                    <title>{edge.linkKind ? `${itemById.get(edge.from)?.title} → ${itemById.get(edge.to)?.title}: ${linkKindLabels[edge.linkKind]}` : text.history}</title>
+                  </path>
                 );
               })}
               {graphNodes.map((node) => (
-                <g key={node.id} onClick={() => workspace.items.some((item) => item.id === node.id) && setSelectedId(node.id)}>
-                  <circle
-                    cx={node.x}
-                    cy={node.y}
-                    r={node.type === "revision" ? 13 : 22}
-                    className={`${node.type} ${node.id === selectedItem?.id ? "selected" : ""}`}
-                  />
-                  <text x={node.x} y={node.y + 38}>
-                    {node.label.slice(0, 18)}
-                  </text>
+                <g key={node.id} role={node.type !== "revision" ? "button" : undefined}
+                  tabIndex={node.type !== "revision" ? 0 : undefined}
+                  aria-label={`${node.label}${isolatedIds.has(node.id) ? ` (${text.islands})` : ""}`}
+                  onClick={() => node.type !== "revision" && setSelectedId(node.id)}
+                  onKeyDown={(event) => {
+                    if (node.type !== "revision" && (event.key === "Enter" || event.key === " ")) {
+                      event.preventDefault(); setSelectedId(node.id);
+                    }
+                  }}>
+                  <title>{node.label}</title>
+                  {isolatedIds.has(node.id) && <circle cx={node.x} cy={node.y} r={29} className="island-ring" />}
+                  <circle cx={node.x} cy={node.y} r={node.type === "revision" ? 13 : 22}
+                    className={`${node.type} ${node.id === selectedItem?.id ? "selected" : ""}`} />
+                  <text x={node.x} y={node.y + 43}>{Array.from(node.label).slice(0, 14).join("")}</text>
                 </g>
               ))}
             </svg>
+            </div>
+            <h3>{text.islands}</h3>
+            <div className="island-list">
+              {workspace.items.filter((item) => isolatedIds.has(item.id)).map((item) => (
+                <button type="button" key={item.id} onClick={() => setSelectedId(item.id)}>
+                  {typeLabels[item.type]} · {item.title}
+                </button>
+              ))}
+              {!isolatedIds.size && <p className="muted">{text.noIslands}</p>}
+            </div>
           </div>
         ) : (
           <div className="spark-panel">

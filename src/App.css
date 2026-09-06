@@ -352,6 +352,46 @@ button {
   justify-items: end;
 }
 
+.focus-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid #d8cec0;
+  border-radius: 8px;
+  color: #202124;
+  background: #ffffff;
+}
+
+.focus-toggle[aria-pressed="true"] {
+  background: #e7dfd2;
+}
+
+.focus-toggle:focus-visible {
+  outline: 2px solid #675f54;
+  outline-offset: 3px;
+}
+
+.app-shell.focus-mode {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.app-shell.focus-mode > .library-pane,
+.app-shell.focus-mode > .knowledge-pane {
+  display: none;
+}
+
+.app-shell.focus-mode > .editor-pane {
+  width: 100%;
+  max-width: 1000px;
+  min-width: 0;
+  min-height: 100vh;
+  margin-inline: auto;
+  border-inline: 1px solid #ded6c9;
+}
+
 .growth-select {
   display: grid;
   gap: 5px;

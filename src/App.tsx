@@ -163,6 +163,9 @@ const UI_TEXT = {
     updated: "更新",
     stage: "段階",
     title: "タイトル",
+    focusMode: "集中モード",
+    exitFocusMode: "集中モードを終了",
+    focusHelp: "Escキーでも終了できます。",
     documentType: "ドキュメント種別",
     growth: "成長段階",
     sproutArticle: "記事へ発芽",
@@ -233,6 +236,9 @@ const UI_TEXT = {
     updated: "updated",
     stage: "stage",
     title: "Title",
+    focusMode: "Focus mode",
+    exitFocusMode: "Exit focus mode",
+    focusHelp: "You can also exit with Esc.",
     documentType: "Document type",
     growth: "Growth",
     sproutArticle: "Sprout into article",
@@ -682,6 +688,8 @@ function App() {
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState<Draft>(() => makeDraft(workspace.items[0]));
   const [verticalReading, setVerticalReading] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  const focusToggleRef = useRef<HTMLButtonElement>(null);
   const [view, setView] = useState<"preview" | "graph" | "spark">("preview");
   const [quickCapture, setQuickCapture] = useState("");
   const [startTemplate, setStartTemplate] = useState<StartTemplate>("blank");
@@ -698,6 +706,20 @@ function App() {
   const typeLabels = TYPE_LABELS[locale];
   const linkKindLabels = LINK_KIND_LABELS[locale];
   const startTemplateLabels = START_TEMPLATE_LABELS[locale];
+
+  useEffect(() => {
+    if (!focusMode) return;
+    const exitOnEscape = (event: KeyboardEvent) => {
+      // Escape may belong to an IME candidate list or an open native control.
+      if (event.key !== "Escape" || event.isComposing || event.keyCode === 229 || event.defaultPrevented) return;
+      if (event.target instanceof HTMLSelectElement) return;
+      event.preventDefault();
+      setFocusMode(false);
+      focusToggleRef.current?.focus();
+    };
+    window.addEventListener("keydown", exitOnEscape);
+    return () => window.removeEventListener("keydown", exitOnEscape);
+  }, [focusMode]);
 
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const workspaceRef = useRef(workspace);
@@ -1140,7 +1162,7 @@ function App() {
   };
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell${focusMode ? " focus-mode" : ""}`}>
       <aside className="library-pane" aria-label={text.libraryAriaLabel}>
         <div className="brand-block">
           <BookOpen size={28} aria-hidden="true" />
@@ -1265,6 +1287,18 @@ function App() {
               />
             </div>
             <div className="editor-actions">
+              <button
+                ref={focusToggleRef}
+                className="focus-toggle"
+                type="button"
+                aria-label={focusMode ? `${text.exitFocusMode} ${text.focusHelp}` : text.focusMode}
+                aria-pressed={focusMode}
+                title={focusMode ? text.focusHelp : undefined}
+                onClick={() => setFocusMode((current) => !current)}
+              >
+                <Pencil size={16} aria-hidden="true" />
+                {focusMode ? text.exitFocusMode : text.focusMode}
+              </button>
               <div className="segmented-control" aria-label={text.documentType}>
                 <button
                   type="button"

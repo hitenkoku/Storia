@@ -808,4 +808,3 @@ button {
 .reader-surface.vertical blockquote { border-left: 0; border-right: 3px solid #86a873; padding: 0 12px 0 0; }
 .graph-panel, .preview-panel { min-width: 0; }
 .reading-controls button, .island-list button { border: 1px solid #ddd5ca; border-radius: 6px; padding: 7px 10px; background: #faf7f1; color: #202124; }
-.reading-controls button[aria-pressed="true"] { background: #294e43; color: white; }

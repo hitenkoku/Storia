@@ -20,9 +20,15 @@ export function isolatedItemIds(items: GraphItem[]) {
 export function graphPositions(items: GraphItem[], revisions: GraphRevision[]) {
   const positions = new Map<string, { x: number; y: number }>();
   let columns = 1;
+  const revisionsByItemId = new Map<string, GraphRevision[]>();
+  revisions.forEach((revision) => {
+    const grouped = revisionsByItemId.get(revision.itemId);
+    if (grouped) grouped.push(revision);
+    else revisionsByItemId.set(revision.itemId, [revision]);
+  });
   items.forEach((item, row) => {
     positions.set(item.id, { x: 110, y: 60 + row * 100 });
-    const children = revisions.filter((revision) => revision.itemId === item.id);
+    const children = revisionsByItemId.get(item.id) ?? [];
     columns = Math.max(columns, children.length + 1);
     children.forEach((revision, column) => {
       positions.set(revision.id, { x: 110 + (column + 1) * 220, y: 60 + row * 100 });

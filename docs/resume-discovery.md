@@ -14,7 +14,7 @@ Use local data only, excluding the current item and published items at selection
 
 Within each perspective, oldest valid `updatedAt` first, then ID in JavaScript code-unit order. Invalid dates sort last and cannot qualify as dormant; future dates cannot qualify as dormant. No padding from unrelated items, so zero to three cards are normal.
 
-Cards retain the title, excerpt, and reason from selection time. They are selected on launch, explicit refresh, and a local-day change detected every 30 seconds or on window focus/document visibility change. Editing, switching items, and changing locale do not rerank them. Reasons describe the selection-time data; explicit refresh uses the latest workspace and selection. Shelf filtering is not implemented.
+Cards retain the title, excerpt, and reason from selection time. They are selected on launch, explicit refresh, shelf changes, and a local-day change detected every 30 seconds or on window focus/document visibility change. Editing, switching items within a shelf, and changing locale do not rerank them. Reasons describe the selection-time data; explicit refresh uses the latest workspace and selection. Candidates are limited to the selected shelf, but isolation checks still include incoming/outgoing links across the entire workspace. Cards moved outside the current shelf are hidden without refilling their slot until the next selection trigger. See [shelves.md](shelves.md).
 
 ## Verification
 

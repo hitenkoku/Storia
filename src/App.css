@@ -625,6 +625,31 @@ button {
   overflow-wrap: anywhere;
 }
 
+.shelf-panel { display: grid; gap: 10px; margin-top: 14px; }
+.shelf-panel label, .shelf-panel form { display: grid; gap: 6px; min-width: 0; }
+.shelf-panel form { margin: 12px 0; }
+.shelf-panel summary { cursor: pointer; font-size: .85rem; }
+.shelf-panel input, .shelf-panel select, .item-shelf select {
+  width: 100%; min-width: 0; padding: 7px; border: 1px solid #a99b87;
+  border-radius: 7px; background: #fffaf2; color: #202124;
+}
+.shelf-panel button, .boundary-links button, .empty-editor button, .open-linked-item {
+  border: 1px solid #b6a890; border-radius: 7px; padding: 7px 10px;
+  background: #f8f4ec; color: #222629; overflow-wrap: anywhere;
+}
+.shelf-panel button:disabled { opacity: .5; cursor: default; }
+.shelf-panel p { font-size: .85rem; }
+.shelf-badge { display: block; font-size: .75rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; }
+.item-shelf { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; margin-bottom: 8px; font-size: .85rem; }
+.empty-editor { min-width: 0; padding: 24px; background: #fffaf2; }
+.boundary-links { display: grid; gap: 8px; }
+.boundary-links button { display: grid; gap: 6px; text-align: left; }
+.boundary-links small { color: #685d4d; }
+.open-linked-item { grid-column: 2 / -1; justify-self: start; font-size: .8rem; }
+.shelf-panel :focus-visible, .item-shelf :focus-visible, .boundary-links :focus-visible, .open-linked-item:focus-visible {
+  outline: 3px solid #b87915; outline-offset: 2px;
+}
+
 .link-list select {
   width: 100%;
   min-height: 32px;

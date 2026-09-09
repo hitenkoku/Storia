@@ -19,8 +19,9 @@ import {
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import { DEFAULT_LINK_KIND, LINK_KINDS, isLinkKind, normalizeLinks, toggleItemLink, changeLinkKind, inheritLinks, updateForeshadow, type ItemLink, type LinkKind } from "./links";
-import { discoverItems, localDay, restoredItemId } from "./discovery";
+import { discoverItems, localDay } from "./discovery";
 import { graphPositions, isolatedItemIds, writingStats } from "./exploration";
+import { ALL_SHELVES, UNFILED, normalizeShelves, validShelfId, shelfScope, inShelf, selectedInShelf, removeShelf, shelfBoundaryLinks, type Shelf } from "./shelves";
 
 type WorkType = "article" | "idea";
 type GrowthStatus = "seed" | "sprout" | "draft" | "revised" | "published";
@@ -35,6 +36,7 @@ type WorkItem = {
   body: string;
   links: ItemLink[];
   resumeNote?: string;
+  shelfId?: string;
   revisionIds: string[];
   createdAt: string;
   updatedAt: string;
@@ -61,6 +63,8 @@ type Draft = {
 };
 
 type StoriaState = {
+  shelves: Shelf[];
+  selectedShelfId?: string;
   selectedId?: string;
   items: WorkItem[];
   revisions: Revision[];
@@ -143,12 +147,20 @@ const START_TEMPLATE_LABELS: Record<Locale, Record<StartTemplate, string>> = {
 };
 const UI_TEXT = {
   ja: {
+    shelves: "作品の棚", allShelves: "すべて", unfiled: "未分類",
+    manageShelves: "棚を管理", newShelfName: "新しい棚の名前", addShelf: "棚を作成",
+    shelfName: "棚の名前", renameShelf: "棚名を変更", deleteShelf: "棚を削除",
+    deleteShelfHelp: "この棚の素材は未分類に戻ります。本文・リンク・履歴は残ります。",
+    confirmDeleteShelf: "素材を残して棚を削除", itemShelf: "素材の所属棚",
+    returnShelf: "前の棚に戻る", emptyShelf: "該当する素材がありません。新しい素材を残すか、棚や検索を切り替えてください。",
+    outsideLinks: "棚をまたぐ関係", openOutside: "棚外の素材を開く", noOutsideLinks: "棚をまたぐ関係はありません。",
+    openMaterial: "開く",
     brandSubtitle: "Web小説と記事のための執筆 Wiki",
     resumeNote: "次に書くこと",
     resumeExample: "例：手紙を開いた主人公の反応から書く",
     todayMaterials: "今日の素材",
     refreshMaterials: "選び直す",
-    discoveryHelp: "選定時の素材から各観点1件。起動・日付変更・選び直す操作で更新します。",
+    discoveryHelp: "選択中の棚から各観点1件。起動・日付変更・棚切替・選び直す操作で更新します。",
     dormant: "しばらく触っていない（7日以上）",
     isolated: "まだつながっていない",
     sharedTags: "同じタグがある",
@@ -235,11 +247,19 @@ const UI_TEXT = {
   },
   en: {
     brandSubtitle: "Writing Wiki for web fiction and articles",
+    shelves: "Story shelves", allShelves: "All", unfiled: "Unfiled",
+    manageShelves: "Manage shelves", newShelfName: "New shelf name", addShelf: "Create shelf",
+    shelfName: "Shelf name", renameShelf: "Rename shelf", deleteShelf: "Delete shelf",
+    deleteShelfHelp: "Materials in this shelf will become unfiled. Bodies, links and history will be kept.",
+    confirmDeleteShelf: "Delete shelf and keep materials", itemShelf: "Material shelf",
+    returnShelf: "Back to previous shelf", emptyShelf: "No matching materials. Create a material or change the shelf or search.",
+    outsideLinks: "Cross-shelf relationships", openOutside: "Open outside material", noOutsideLinks: "No cross-shelf relationships.",
+    openMaterial: "Open",
     resumeNote: "Next writing step",
     resumeExample: "Example: Start with the protagonist's reaction to the letter",
     todayMaterials: "Today's materials",
     refreshMaterials: "Refresh picks",
-    discoveryHelp: "One per perspective at selection time. Updates on launch, a new day, or refresh.",
+    discoveryHelp: "One per perspective in this shelf. Updates on launch, a new day, a shelf change, or refresh.",
     dormant: "Untouched for at least 7 days",
     isolated: "Not connected yet",
     sharedTags: "Shares a tag",
@@ -478,26 +498,32 @@ const isStartTemplate = (value: unknown): value is StartTemplate =>
 const isLocale = (value: unknown): value is Locale =>
   typeof value === "string" && LOCALES.includes(value as Locale);
 
-const normalizeState = (state: StoriaState): StoriaState => ({
-  ...state,
-  items: state.items.map(
-    (item): WorkItem => ({
-      id: item.id,
-      type: item.type,
-      growthStatus: isGrowthStatus((item as { growthStatus?: unknown }).growthStatus)
-        ? (item as { growthStatus: GrowthStatus }).growthStatus
-        : defaultGrowthStatus(item.type),
-      title: item.title,
-      tags: item.tags,
-      body: item.body,
-      resumeNote: typeof item.resumeNote === "string" ? item.resumeNote : "",
-      links: normalizeLinks(item),
-      revisionIds: item.revisionIds,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-    }),
-  ),
-});
+const normalizeState = (state: StoriaState): StoriaState => {
+  const shelves = normalizeShelves(state.shelves);
+  return {
+    ...state,
+    shelves,
+    selectedShelfId: shelfScope(shelves, state.selectedShelfId),
+    items: state.items.map(
+      (item): WorkItem => ({
+        id: item.id,
+        type: item.type,
+        growthStatus: isGrowthStatus((item as { growthStatus?: unknown }).growthStatus)
+          ? (item as { growthStatus: GrowthStatus }).growthStatus
+          : defaultGrowthStatus(item.type),
+        title: item.title,
+        tags: item.tags,
+        body: item.body,
+        resumeNote: typeof item.resumeNote === "string" ? item.resumeNote : "",
+        shelfId: validShelfId(shelves, item.shelfId),
+        links: normalizeLinks(item),
+        revisionIds: item.revisionIds,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      }),
+    ),
+  };
+};
 
 const seedState = (): StoriaState => {
   const createdAt = nowIso();
@@ -506,6 +532,7 @@ const seedState = (): StoriaState => {
   const revisionId = newId();
 
   return {
+    shelves: [],
     items: [
       {
         id: articleId,
@@ -682,12 +709,31 @@ function App() {
       return isLocale(stored) ? stored : "ja";
     } catch { return "ja"; }
   });
-  const selectedId = restoredItemId(workspace.items, workspace.selectedId);
-  const setSelectedId = (id: string) => setWorkspace((current) => ({ ...current, selectedId: id }));
+  const selectedShelf = shelfScope(workspace.shelves, workspace.selectedShelfId);
+  const scopedItems = useMemo(() => workspace.items.filter((item) => inShelf(item, selectedShelf)), [workspace.items, selectedShelf]);
+  const selectedId = selectedInShelf(workspace.items, selectedShelf, workspace.selectedId);
+  const [returnShelf, setReturnShelf] = useState<string | null>(null);
+  const [shelfName, setShelfName] = useState("");
+  const [renameShelfName, setRenameShelfName] = useState("");
+  const [deletingShelf, setDeletingShelf] = useState(false);
+  const switchShelf = (scope: string) => {
+    setQuery("");
+    setWorkspace((current) => ({ ...current, selectedShelfId: scope,
+      selectedId: selectedInShelf(current.items, scope, current.selectedId) }));
+  };
+  const setSelectedId = (id: string) => {
+    const target = workspace.items.find((item) => item.id === id);
+    if (target && !inShelf(target, selectedShelf)) {
+      setReturnShelf(selectedShelf);
+      setQuery("");
+    }
+    setWorkspace((current) => ({ ...current, selectedId: id,
+      selectedShelfId: target && !inShelf(target, selectedShelf) ? target.shelfId ?? UNFILED : current.selectedShelfId }));
+  };
   const [saveFailed, setSaveFailed] = useState(false);
   const [discovery, setDiscovery] = useState(() => ({
     day: localDay(new Date()),
-    cards: discoverItems(workspace.items, selectedId, new Date()).map((card) => ({
+    cards: discoverItems(workspace.items, selectedId, new Date(), new Set(scopedItems.map((item) => item.id))).map((card) => ({
       ...card, item: workspace.items.find((item) => item.id === card.id)!,
     })),
   }));
@@ -707,11 +753,54 @@ function App() {
   >({});
 
   const selectedItem =
-    workspace.items.find((item) => item.id === selectedId) ?? workspace.items[0];
+    workspace.items.find((item) => item.id === selectedId);
   const text = UI_TEXT[locale];
   const typeLabels = TYPE_LABELS[locale];
   const linkKindLabels = LINK_KIND_LABELS[locale];
   const startTemplateLabels = START_TEMPLATE_LABELS[locale];
+  const shelfLabel = (id?: string) => id === ALL_SHELVES ? text.allShelves
+    : workspace.shelves.find((shelf) => shelf.id === id)?.name ?? text.unfiled;
+  const activeShelf = workspace.shelves.find((shelf) => shelf.id === selectedShelf);
+
+  useEffect(() => {
+    setRenameShelfName(activeShelf?.name ?? "");
+    setDeletingShelf(false);
+  }, [activeShelf?.id, activeShelf?.name]);
+
+  const addShelf = (event: FormEvent) => {
+    event.preventDefault();
+    const name = shelfName.trim();
+    if (!name) return;
+    const id = newId();
+    setWorkspace((current) => ({ ...current, shelves: [...current.shelves, { id, name }], selectedShelfId: id, selectedId: "" }));
+    setShelfName("");
+    setQuery("");
+    setReturnShelf(null);
+  };
+
+  const renameShelf = (event: FormEvent) => {
+    event.preventDefault();
+    const name = renameShelfName.trim();
+    if (!name || !activeShelf) return;
+    setWorkspace((current) => ({ ...current, shelves: current.shelves.map((shelf) => shelf.id === activeShelf.id ? { ...shelf, name } : shelf) }));
+  };
+
+  const deleteShelf = () => {
+    if (!activeShelf) return;
+    setWorkspace((current) => ({ ...current, ...removeShelf(current.items, current.shelves, activeShelf.id), selectedShelfId: UNFILED }));
+    setQuery("");
+    setReturnShelf(null);
+  };
+
+  const moveItem = (value: string) => {
+    if (!selectedItem) return;
+    const shelfId = validShelfId(workspace.shelves, value);
+    if (selectedShelf !== ALL_SHELVES) setReturnShelf(selectedShelf);
+    setQuery("");
+    setWorkspace((current) => ({ ...current,
+      items: current.items.map((item) => item.id === selectedItem.id ? { ...item, shelfId } : item),
+      selectedShelfId: selectedShelf === ALL_SHELVES ? ALL_SHELVES : shelfId ?? UNFILED }));
+  };
 
   useEffect(() => {
     if (!focusMode) return;
@@ -761,10 +850,13 @@ function App() {
     const current = workspaceRef.current;
     const now = new Date();
     setDiscovery({ day: localDay(now), cards: discoverItems(current.items,
-      restoredItemId(current.items, current.selectedId), now).map((card) => ({
+      selectedInShelf(current.items, shelfScope(current.shelves, current.selectedShelfId), current.selectedId), now,
+      new Set(current.items.filter((item) => inShelf(item, shelfScope(current.shelves, current.selectedShelfId))).map((item) => item.id))).map((card) => ({
         ...card, item: current.items.find((item) => item.id === card.id)!,
       })) });
   };
+
+  useEffect(() => { refreshDiscovery(); }, [selectedShelf]);
 
   useEffect(() => {
     const checkDay = () => { if (localDay(new Date()) !== discovery.day) refreshDiscovery(); };
@@ -783,21 +875,19 @@ function App() {
   }, [locale]);
 
   useEffect(() => {
-    if (selectedItem) {
-      setDraft(makeDraft(selectedItem));
-    }
+    setDraft(makeDraft(selectedItem));
   }, [selectedItem?.id]);
 
   const filteredItems = useMemo(() => {
     const term = query.trim().toLowerCase();
-    if (!term) return workspace.items;
+    if (!term) return scopedItems;
 
-    return workspace.items.filter((item) =>
+    return scopedItems.filter((item) =>
       [item.title, item.body, item.growthStatus, ...item.tags].some((value) =>
         value.toLowerCase().includes(term),
       ),
     );
-  }, [query, workspace.items]);
+  }, [query, scopedItems]);
 
   const revisionsForSelected = useMemo(
     () =>
@@ -808,8 +898,8 @@ function App() {
   );
 
   const allTags = useMemo(
-    () => Array.from(new Set(workspace.items.flatMap((item) => item.tags))).sort(),
-    [workspace.items],
+    () => Array.from(new Set(scopedItems.flatMap((item) => item.tags))).sort(),
+    [scopedItems],
   );
 
   const itemById = useMemo(
@@ -881,10 +971,13 @@ function App() {
   }, [draft.body, draft.links, draft.title, draft.type, itemById, linkKindLabels, locale, selectedItem, text]);
 
   const isolatedIds = useMemo(() => isolatedItemIds(workspace.items), [workspace.items]);
-  const graphLayout = useMemo(() => graphPositions(workspace.items, workspace.revisions), [workspace.items, workspace.revisions]);
+  const boundaryLinks = useMemo(() => shelfBoundaryLinks(workspace.items, selectedShelf), [workspace.items, selectedShelf]);
+  const scopedIslands = scopedItems.filter((item) => isolatedIds.has(item.id));
+  const discoveryCards = discovery.cards.filter((card) => scopedItems.some((item) => item.id === card.id));
+  const graphLayout = useMemo(() => graphPositions(scopedItems, workspace.revisions), [scopedItems, workspace.revisions]);
   const stats = useMemo(() => writingStats(draft.body), [draft.body]);
   const graphNodes = useMemo<GraphNode[]>(() => [
-    ...workspace.items.map((item) => ({
+    ...scopedItems.map((item) => ({
       id: item.id, label: item.title, type: item.type, ...graphLayout.positions.get(item.id)!,
     })),
     ...workspace.revisions.filter((revision) => graphLayout.positions.has(revision.id)).map((revision) => ({
@@ -893,7 +986,7 @@ function App() {
       type: "revision" as const,
       ...graphLayout.positions.get(revision.id)!,
     })),
-  ], [workspace.items, workspace.revisions, graphLayout]);
+  ], [scopedItems, workspace.revisions, graphLayout]);
 
   const graphEdges = useMemo<GraphEdge[]>(() => {
     const links = workspace.items.flatMap((item) =>
@@ -1016,6 +1109,7 @@ function App() {
       type: itemType,
       growthStatus: defaultGrowthStatus(itemType),
       title: text.branchedTitle(revision.title.trim() || selectedItem.title),
+      shelfId: selectedItem.shelfId,
       tags: Array.from(new Set([itemType, ...revision.tags.filter((tag) => tag !== itemType)])),
       body: revision.body,
       links: [{ id: selectedItem.id, kind: "元ネタ" }],
@@ -1024,7 +1118,7 @@ function App() {
       updatedAt: timestamp,
     };
 
-    createWorkItem(item);
+    createWorkItem(item, true);
   };
 
   const cacheRevisionDiff = (revision: Revision, isOpen: boolean) => {
@@ -1059,9 +1153,10 @@ function App() {
     });
   }, [draft.body, openRevisionDiffs, revisionsForSelected]);
 
-  const createWorkItem = (item: WorkItem) => {
-    setWorkspace((current) => ({ ...current, items: [item, ...current.items] }));
-    setSelectedId(item.id);
+  const createWorkItem = (item: WorkItem, inheritShelf = false) => {
+    item = { ...item, shelfId: inheritShelf ? item.shelfId : validShelfId(workspace.shelves, selectedShelf) };
+    setQuery("");
+    setWorkspace((current) => ({ ...current, items: [item, ...current.items], selectedId: item.id }));
     setDraft(makeDraft(item));
   };
 
@@ -1144,6 +1239,7 @@ function App() {
     });
     const article: WorkItem = {
       id: articleId,
+      shelfId: selectedItem.shelfId,
       type: "article",
       growthStatus: "draft",
       title: draft.title.trim() || selectedItem.title,
@@ -1223,6 +1319,36 @@ function App() {
           </select>
         </label>
 
+        <section className="shelf-panel" aria-label={text.shelves}>
+          <label className="shelf-select">
+            <span>{text.shelves}</span>
+            <select title={shelfLabel(selectedShelf)} value={selectedShelf} onChange={(event) => { switchShelf(event.currentTarget.value); setReturnShelf(null); }}>
+              <option value={ALL_SHELVES}>{text.allShelves}</option>
+              <option value={UNFILED}>{text.unfiled}</option>
+              {workspace.shelves.map((shelf) => <option key={shelf.id} value={shelf.id}>{shelf.name}</option>)}
+            </select>
+          </label>
+          {returnShelf !== null && <button type="button" onClick={() => { switchShelf(shelfScope(workspace.shelves, returnShelf)); setReturnShelf(null); }}>{text.returnShelf}: {shelfLabel(returnShelf)}</button>}
+          <details>
+            <summary>{text.manageShelves}</summary>
+            <form onSubmit={addShelf}>
+              <label>{text.newShelfName}<input value={shelfName} onChange={(event) => setShelfName(event.currentTarget.value)} /></label>
+              <button type="submit" disabled={!shelfName.trim()}>{text.addShelf}</button>
+            </form>
+            {activeShelf && <>
+              <form onSubmit={renameShelf}>
+                <label>{text.shelfName}<input value={renameShelfName} onChange={(event) => setRenameShelfName(event.currentTarget.value)} /></label>
+                <button type="submit" disabled={!renameShelfName.trim()}>{text.renameShelf}</button>
+              </form>
+              {deletingShelf ? <div role="group" aria-label={text.deleteShelf}>
+                <p>{text.deleteShelfHelp}</p>
+                <button type="button" onClick={deleteShelf}>{text.confirmDeleteShelf}</button>
+                <button type="button" onClick={() => setDeletingShelf(false)}>{text.cancel}</button>
+              </div> : <button type="button" onClick={() => setDeletingShelf(true)}>{text.deleteShelf}</button>}
+            </>}
+          </details>
+        </section>
+
         <div className="toolbar">
           <button className="icon-button" type="button" onClick={() => createItem("article")} title={text.addArticle} aria-label={text.addArticle}>
             <FileText size={18} aria-hidden="true" />
@@ -1290,7 +1416,7 @@ function App() {
           <h2 id="discovery-title">{text.todayMaterials}</h2>
           <button type="button" onClick={refreshDiscovery}>{text.refreshMaterials}</button>
           <p className="discovery-help">{text.discoveryHelp}</p>
-          {discovery.cards.length ? discovery.cards.map(({ id, reason, item }) => (
+          {discoveryCards.length ? discoveryCards.map(({ id, reason, item }) => (
             <button className="discovery-card" type="button" key={id} onClick={() => setSelectedId(id)}>
               <strong>{item.title}</strong>
               <span>{Array.from(item.body.replace(/\s+/gu, " ").trim()).slice(0, 90).join("")}</span>
@@ -1300,6 +1426,7 @@ function App() {
         </section>
 
         <div className="item-list">
+          {!filteredItems.length && <p>{text.emptyShelf}</p>}
           {filteredItems.map((item) => (
             <button
               key={item.id}
@@ -1317,12 +1444,14 @@ function App() {
                 </span>
               </div>
               <strong>{item.title}</strong>
+              <span className="shelf-badge" title={shelfLabel(item.shelfId)}>{shelfLabel(item.shelfId)}</span>
               <small>{formatDate(item.updatedAt)} {text.updated}</small>
             </button>
           ))}
         </div>
       </aside>
 
+      {!selectedItem && <section className="empty-editor"><p>{text.emptyShelf}</p><button type="button" onClick={() => createItem("idea")}>{text.addIdea}</button>{saveFailed && <div role="alert">{text.saveFailed} <button type="button" onClick={persistWorkspace}>{text.retrySave}</button></div>}</section>}
       {selectedItem && (
         <form className="editor-pane" onSubmit={createSnapshot}>
           <div className="editor-header">
@@ -1405,6 +1534,13 @@ function App() {
           </label>
 
           <div className="editor-support">
+          <label className="item-shelf">
+            <span>{text.itemShelf}</span>
+            <select title={shelfLabel(selectedItem.shelfId)} value={selectedItem.shelfId ?? UNFILED} onChange={(event) => moveItem(event.currentTarget.value)}>
+              <option value={UNFILED}>{text.unfiled}</option>
+              {workspace.shelves.map((shelf) => <option key={shelf.id} value={shelf.id}>{shelf.name}</option>)}
+            </select>
+          </label>
           <details className="resume-note" key={selectedItem.id}>
             <summary>{text.resumeNote}</summary>
             <label>
@@ -1522,14 +1658,24 @@ function App() {
               ))}
             </svg>
             </div>
+            <h3>{text.outsideLinks}</h3>
+            <div className="boundary-links">
+              {boundaryLinks.map(({ from, to, kind, outside }) => (
+                <button type="button" key={`${from.id}-${to.id}`} onClick={() => setSelectedId(outside.id)}>
+                  <span>{from.title} → {to.title} · {linkKindLabels[kind as LinkKind]}</span>
+                  <small>{text.openOutside}: {outside.title} · {shelfLabel(outside.shelfId)}</small>
+                </button>
+              ))}
+              {!boundaryLinks.length && <p className="muted">{text.noOutsideLinks}</p>}
+            </div>
             <h3>{text.islands}</h3>
             <div className="island-list">
-              {workspace.items.filter((item) => isolatedIds.has(item.id)).map((item) => (
+              {scopedIslands.map((item) => (
                 <button type="button" key={item.id} onClick={() => setSelectedId(item.id)}>
                   {typeLabels[item.type]} · {item.title}
                 </button>
               ))}
-              {!isolatedIds.size && <p className="muted">{text.noIslands}</p>}
+              {!scopedIslands.length && <p className="muted">{text.noIslands}</p>}
             </div>
           </div>
         ) : (
@@ -1550,10 +1696,10 @@ function App() {
           </h2>
           <div className="link-list">
             {workspace.items
-              .filter((item) => item.id !== selectedItem?.id)
+              .filter((item) => selectedItem && item.id !== selectedItem.id)
               .map((item) => {
                 const link = draft.links.find((candidate) => candidate.id === item.id);
-                const checkboxId = `link-${selectedItem.id}-${item.id}`;
+                const checkboxId = `link-${selectedItem?.id}-${item.id}`;
 
                 return (
                   <div key={item.id} className="link-row">
@@ -1563,7 +1709,7 @@ function App() {
                       checked={Boolean(link)}
                       onChange={() => toggleLink(item.id)}
                     />
-                    <label htmlFor={checkboxId}>{item.title}</label>
+                    <label htmlFor={checkboxId}>{item.title}<small className="shelf-badge" title={shelfLabel(item.shelfId)}>{shelfLabel(item.shelfId)}</small></label>
                     <select
                       value={link?.kind ?? DEFAULT_LINK_KIND}
                       onChange={(event) => handleLinkKindChange(item.id, event.currentTarget.value)}
@@ -1576,6 +1722,7 @@ function App() {
                         </option>
                       ))}
                     </select>
+                    <button className="open-linked-item" type="button" onClick={() => setSelectedId(item.id)} aria-label={`${text.openMaterial}: ${item.title} · ${shelfLabel(item.shelfId)}`}>{text.openMaterial}</button>
                     {link?.kind === "伏線" && (
                       <div className="foreshadow-fields">
                         <p id={`${checkboxId}-help`}>{text.foreshadowHelp}</p>

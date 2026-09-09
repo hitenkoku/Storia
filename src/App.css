@@ -639,6 +639,32 @@ button {
   background: #f4eee4;
 }
 
+.foreshadow-fields {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.foreshadow-fields p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #62594e;
+  overflow-wrap: anywhere;
+}
+
+.foreshadow-fields textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 72px;
+  padding: 8px;
+  border: 1px solid #d8cec0;
+  border-radius: 7px;
+  resize: vertical;
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+
 .revision-card {
   padding: 10px;
   border: 1px solid #e4ddd2;

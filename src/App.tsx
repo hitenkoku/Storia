@@ -18,19 +18,13 @@ import {
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
+import { DEFAULT_LINK_KIND, LINK_KINDS, isLinkKind, normalizeLinks, toggleItemLink, changeLinkKind, inheritLinks, updateForeshadow, type ItemLink, type LinkKind } from "./links";
 import { graphPositions, isolatedItemIds, writingStats } from "./exploration";
 
 type WorkType = "article" | "idea";
 type GrowthStatus = "seed" | "sprout" | "draft" | "revised" | "published";
 type StartTemplate = "blank" | "scene" | "setting" | "question" | "fragment";
 type Locale = "ja" | "en";
-type LinkKind = "伏線" | "元ネタ" | "対立" | "派生" | "回収先" | "関連";
-
-type ItemLink = {
-  id: string;
-  kind: LinkKind;
-};
-
 type WorkItem = {
   id: string;
   type: WorkType;
@@ -90,8 +84,6 @@ const DEFAULT_REVISION_NOTES: Record<Locale, string> = {
   ja: "保存前のスナップショット",
   en: "Snapshot before saving",
 };
-const DEFAULT_LINK_KIND: LinkKind = "関連";
-const LINK_KINDS: LinkKind[] = ["伏線", "元ネタ", "対立", "派生", "回収先", "関連"];
 const GROWTH_STATUSES: GrowthStatus[] = ["seed", "sprout", "draft", "revised", "published"];
 const START_TEMPLATE_OPTIONS: StartTemplate[] = ["blank", "scene", "setting", "question", "fragment"];
 const LOCALES: Locale[] = ["ja", "en"];
@@ -188,6 +180,13 @@ const UI_TEXT = {
 
     links: "リンク",
     linkKindLabel: "の関係タイプ",
+    payoffStatus: "回収状態",
+    payoffUnset: "未設定",
+    payoffOpen: "未回収",
+    payoffDone: "回収済",
+    intentNote: "意図メモ",
+    foreshadowHelp: "この方向のリンクについて作者が記録します。本文からは自動判定しません。",
+    sparkNameHelp: "リンク先タイトルの文字列照合です。作者指定の回収状態とは無関係です。",
     history: "履歴",
     revisionBody: "この版の本文",
     revisionDiff: "現在版との差分",
@@ -205,7 +204,7 @@ const UI_TEXT = {
     sparkQuestionTitle: "問い",
     sparkConflictTitle: "矛盾",
     sparkNextLineTitle: "次に書ける一文",
-    sparkUnresolvedTitle: "未回収リンク",
+    sparkUnresolvedTitle: "本文に名前が見当たらないリンク",
     sparkQuestionIdea: (title: string) =>
       `「${title}」が作品になるなら、読者に最初に見せる出来事は何か。`,
     sparkQuestionArticle: "この場面で、誰が何を失い、何を隠そうとしているか。",
@@ -218,7 +217,7 @@ const UI_TEXT = {
     sparkNextFromTitle: (title: string) =>
       `「${title}」について、まだ誰にも知られていない事実を一文で書く。`,
     sparkNoUnresolved:
-      "未回収リンクはありません。リンクがある場合は、本文内でリンク先に触れられています。",
+      "本文に名前が見当たらないリンクはありません。リンク先タイトルの文字列照合であり、作者が指定する回収状態とは無関係です。",
   },
   en: {
     brandSubtitle: "Writing Wiki for web fiction and articles",
@@ -261,6 +260,13 @@ const UI_TEXT = {
 
     links: "Links",
     linkKindLabel: " relationship type",
+    payoffStatus: "Payoff status",
+    payoffUnset: "Unset",
+    payoffOpen: "Unresolved",
+    payoffDone: "Resolved",
+    intentNote: "Intent note",
+    foreshadowHelp: "Recorded by the author for this direction only. Never inferred from the body.",
+    sparkNameHelp: "Matches target title text only; independent of author-specified payoff status.",
     history: "History",
     revisionBody: "Revision body",
     revisionDiff: "Diff from current",
@@ -278,7 +284,7 @@ const UI_TEXT = {
     sparkQuestionTitle: "Question",
     sparkConflictTitle: "Conflict",
     sparkNextLineTitle: "Next line",
-    sparkUnresolvedTitle: "Unresolved links",
+    sparkUnresolvedTitle: "Links whose names are absent from the body",
     sparkQuestionIdea: (title: string) =>
       `If "${title}" became a finished work, what event should the reader see first?`,
     sparkQuestionArticle: "In this scene, who loses what, and what are they trying to hide?",
@@ -291,7 +297,7 @@ const UI_TEXT = {
     sparkNextFromTitle: (title: string) =>
       `Write one sentence about "${title}" that no character knows yet.`,
     sparkNoUnresolved:
-      "There are no unresolved links. When links exist, their targets are already mentioned in the body.",
+      "No linked names are absent from the body. This matches target title text only and is independent of author-specified payoff status.",
   },
 } satisfies Record<Locale, Record<string, string | ((value: string) => string)>>;
 const START_TEMPLATES: Record<
@@ -438,9 +444,6 @@ const formatDate = (value: string) =>
     minute: "2-digit",
   }).format(new Date(value));
 
-const isLinkKind = (value: unknown): value is LinkKind =>
-  typeof value === "string" && LINK_KINDS.includes(value as LinkKind);
-
 const isGrowthStatus = (value: unknown): value is GrowthStatus =>
   typeof value === "string" && GROWTH_STATUSES.includes(value as GrowthStatus);
 
@@ -449,38 +452,6 @@ const isStartTemplate = (value: unknown): value is StartTemplate =>
 
 const isLocale = (value: unknown): value is Locale =>
   typeof value === "string" && LOCALES.includes(value as Locale);
-
-const normalizeLinks = (item: unknown): ItemLink[] => {
-  const value = item as { links?: unknown; linkedIds?: unknown };
-
-  if (Array.isArray(value.links)) {
-    return value.links
-      .map((link) => {
-        if (typeof link === "string") {
-          return { id: link, kind: DEFAULT_LINK_KIND };
-        }
-        if (link && typeof link === "object") {
-          const candidate = link as { id?: unknown; kind?: unknown };
-          if (typeof candidate.id === "string") {
-            return {
-              id: candidate.id,
-              kind: isLinkKind(candidate.kind) ? candidate.kind : DEFAULT_LINK_KIND,
-            };
-          }
-        }
-        return null;
-      })
-      .filter((link): link is ItemLink => link !== null);
-  }
-
-  if (Array.isArray(value.linkedIds)) {
-    return value.linkedIds
-      .filter((id): id is string => typeof id === "string")
-      .map((id) => ({ id, kind: DEFAULT_LINK_KIND }));
-  }
-
-  return [];
-};
 
 const normalizeState = (state: StoriaState): StoriaState => ({
   ...state,
@@ -837,7 +808,7 @@ function App() {
           unresolvedLinks.length > 0
             ? unresolvedLinks
                 .map(({ item, kind }) => `${linkKindLabels[kind]}: ${item.title}`)
-                .join(" / ")
+                .join(" / ") + " — " + text.sparkNameHelp
             : text.sparkNoUnresolved,
       },
     ];
@@ -1099,7 +1070,7 @@ function App() {
     const baseTags = parseTags(draft.tags, "article");
     const tags = Array.from(new Set(["idea", ...baseTags]));
     const links = [
-      ...draft.links,
+      ...inheritLinks(draft.links),
       { id: selectedItem.id, kind: "元ネタ" as const },
     ].filter((link, index, allLinks) => {
       if (link.id === articleId) return false;
@@ -1142,16 +1113,14 @@ function App() {
   };
 
   const toggleLink = (id: string) => {
-    const links = draft.links.some((link) => link.id === id)
-      ? draft.links.filter((link) => link.id !== id)
-      : [...draft.links, { id, kind: DEFAULT_LINK_KIND }];
+    const links = toggleItemLink(draft.links, id);
 
     updateDraft({ links });
   };
 
   const updateLinkKind = (id: string, kind: LinkKind) => {
     updateDraft({
-      links: draft.links.map((link) => (link.id === id ? { ...link, kind } : link)),
+      links: changeLinkKind(draft.links, id, kind),
     });
   };
 
@@ -1511,6 +1480,29 @@ function App() {
                         </option>
                       ))}
                     </select>
+                    {link?.kind === "伏線" && (
+                      <div className="foreshadow-fields">
+                        <p id={`${checkboxId}-help`}>{text.foreshadowHelp}</p>
+                        <label htmlFor={`${checkboxId}-status`}>{text.payoffStatus}</label>
+                        <select
+                          id={`${checkboxId}-status`}
+                          aria-describedby={`${checkboxId}-help`}
+                          value={link.payoffStatus ?? "unset"}
+                          onChange={(event) => updateDraft({ links: updateForeshadow(draft.links, item.id, { payoffStatus: event.currentTarget.value }) })}
+                        >
+                          <option value="unset">{text.payoffUnset}</option>
+                          <option value="unresolved">{text.payoffOpen}</option>
+                          <option value="resolved">{text.payoffDone}</option>
+                        </select>
+                        <label htmlFor={`${checkboxId}-intent`}>{text.intentNote}</label>
+                        <textarea
+                          id={`${checkboxId}-intent`}
+                          rows={3}
+                          value={link.intentNote ?? ""}
+                          onChange={(event) => updateDraft({ links: updateForeshadow(draft.links, item.id, { intentNote: event.currentTarget.value }) })}
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })}

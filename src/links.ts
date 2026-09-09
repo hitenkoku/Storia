@@ -35,7 +35,7 @@ export const normalizeLinks = (item: unknown): ItemLink[] => {
 export const toggleItemLink = (links: ItemLink[], id: string): ItemLink[] =>
   links.some((link) => link.id === id)
     ? links.filter((link) => link.id !== id)
-    : [...links, { id, kind: DEFAULT_LINK_KIND }];
+    : [...links, { id, kind: DEFAULT_LINK_KIND, payoffStatus: "unset", intentNote: "" }];
 
 export const changeLinkKind = (links: ItemLink[], id: string, kind: LinkKind): ItemLink[] =>
   links.map((link) => link.id === id ? { ...link, kind } : link);

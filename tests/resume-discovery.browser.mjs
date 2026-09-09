@@ -1,4 +1,4 @@
-﻿// Run with a local Vite server and Playwright installed (see docs/resume-discovery.md).
+// Run with a local Vite server and Playwright installed (see docs/resume-discovery.md).
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 
@@ -9,7 +9,7 @@ const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
 const url = process.env.STORIA_TEST_URL ?? 'http://127.0.0.1:1432';
 const base = (id, patch = {}) => ({ id, title: id, type: 'idea', growthStatus: 'seed', tags: ['idea', 'rain'], body: `Body ${id}`, links: [], revisionIds: [], createdAt: '2026-01-01', updatedAt: '2026-01-01', ...patch });
-const initial = { items: [base('A', { links: [{ id: 'B', kind: '関連' }], revisionIds: ['r'] }), base('B'), base('C')], revisions: [{ id: 'r', itemId: 'A', title: 'A', body: 'Historic body', tags: ['rain'], note: 'History', createdAt: '2026-01-01' }] };
+const initial = { items: [base('A', { links: [{ id: 'B', kind: '関連' }, { id: 'C', kind: '伏線', payoffStatus: 'resolved', intentNote: 'Reveal the letter sender' }], revisionIds: ['r'] }), base('B'), base('C')], revisions: [{ id: 'r', itemId: 'A', title: 'A', body: 'Historic body', tags: ['rain'], note: 'History', createdAt: '2026-01-01' }] };
 async function load(state, locale = 'en') {
   await page.addInitScript(({ state, locale }) => {
     if (sessionStorage.getItem('fixture-loaded')) return;
@@ -54,7 +54,10 @@ try {
   assert.equal(await page.getByLabel('Next writing step', { exact: true }).inputValue(), 'Long note '.repeat(400));
   const saved = await stored();
   assert.equal(saved.items[0].body, 'Changed body');
-  assert.deepEqual(saved.items[0].links, initial.items[0].links);
+  assert.deepEqual(saved.items[0].links, initial.items[0].links.map(link => ({ payoffStatus: 'unset', intentNote: '', ...link })));
+  assert.deepEqual(saved.items[0].links.map(({ id, kind }) => ({ id, kind })), initial.items[0].links.map(({ id, kind }) => ({ id, kind })));
+  assert.equal(saved.items[0].links[1].payoffStatus, 'resolved');
+  assert.equal(saved.items[0].links[1].intentNote, 'Reveal the letter sender');
   assert.deepEqual(saved.items[0].tags, initial.items[0].tags);
   assert.deepEqual(saved.items[0].revisionIds, ['r']);
   assert.deepEqual(saved.revisions, initial.revisions);
@@ -100,4 +103,3 @@ try {
   console.error(await page.locator('.resume-note').evaluate((el) => el.outerHTML));
   throw error;
 } finally { await browser.close(); }
-

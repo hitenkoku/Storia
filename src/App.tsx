@@ -19,6 +19,7 @@ import {
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import { DEFAULT_LINK_KIND, LINK_KINDS, isLinkKind, normalizeLinks, toggleItemLink, changeLinkKind, inheritLinks, updateForeshadow, type ItemLink, type LinkKind } from "./links";
+import { discoverItems, localDay, restoredItemId } from "./discovery";
 import { graphPositions, isolatedItemIds, writingStats } from "./exploration";
 
 type WorkType = "article" | "idea";
@@ -33,6 +34,7 @@ type WorkItem = {
   tags: string[];
   body: string;
   links: ItemLink[];
+  resumeNote?: string;
   revisionIds: string[];
   createdAt: string;
   updatedAt: string;
@@ -59,6 +61,7 @@ type Draft = {
 };
 
 type StoriaState = {
+  selectedId?: string;
   items: WorkItem[];
   revisions: Revision[];
 };
@@ -141,6 +144,17 @@ const START_TEMPLATE_LABELS: Record<Locale, Record<StartTemplate, string>> = {
 const UI_TEXT = {
   ja: {
     brandSubtitle: "Web小説と記事のための執筆 Wiki",
+    resumeNote: "次に書くこと",
+    resumeExample: "例：手紙を開いた主人公の反応から書く",
+    todayMaterials: "今日の素材",
+    refreshMaterials: "選び直す",
+    discoveryHelp: "選定時の素材から各観点1件。起動・日付変更・選び直す操作で更新します。",
+    dormant: "しばらく触っていない（7日以上）",
+    isolated: "まだつながっていない",
+    sharedTags: "同じタグがある",
+    noMaterials: "今日の候補はまだありません。新しい断片を残してみましょう。",
+    saveFailed: "保存できませんでした。画面を閉じずに再試行してください。",
+    retrySave: "保存を再試行",
     libraryAriaLabel: "Storia ライブラリ",
     localeLabel: "言語",
     addArticle: "記事を追加",
@@ -221,6 +235,17 @@ const UI_TEXT = {
   },
   en: {
     brandSubtitle: "Writing Wiki for web fiction and articles",
+    resumeNote: "Next writing step",
+    resumeExample: "Example: Start with the protagonist's reaction to the letter",
+    todayMaterials: "Today's materials",
+    refreshMaterials: "Refresh picks",
+    discoveryHelp: "One per perspective at selection time. Updates on launch, a new day, or refresh.",
+    dormant: "Untouched for at least 7 days",
+    isolated: "Not connected yet",
+    sharedTags: "Shares a tag",
+    noMaterials: "No candidates today. Capture a new fragment to begin.",
+    saveFailed: "Could not save. Keep this window open and retry.",
+    retrySave: "Retry save",
     libraryAriaLabel: "Storia library",
     localeLabel: "Language",
     addArticle: "Add article",
@@ -437,7 +462,7 @@ const defaultGrowthStatus = (type: WorkType): GrowthStatus =>
   type === "idea" ? "seed" : "draft";
 
 const formatDate = (value: string) =>
-  new Intl.DateTimeFormat("ja-JP", {
+  !Number.isFinite(Date.parse(value)) ? "—" : new Intl.DateTimeFormat("ja-JP", {
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
@@ -465,6 +490,7 @@ const normalizeState = (state: StoriaState): StoriaState => ({
       title: item.title,
       tags: item.tags,
       body: item.body,
+      resumeNote: typeof item.resumeNote === "string" ? item.resumeNote : "",
       links: normalizeLinks(item),
       revisionIds: item.revisionIds,
       createdAt: item.createdAt,
@@ -534,13 +560,13 @@ const seedState = (): StoriaState => {
   };
 };
 
-const makeDraft = (item: WorkItem): Draft => ({
-  title: item.title,
-  type: item.type,
-  growthStatus: item.growthStatus,
-  tags: item.tags.filter((tag) => tag !== item.type).join(", "),
-  body: item.body,
-  links: item.links,
+const makeDraft = (item?: WorkItem): Draft => ({
+  title: item?.title ?? "",
+  type: item?.type ?? "idea",
+  growthStatus: item?.growthStatus ?? "seed",
+  tags: item?.tags.filter((tag) => tag !== item.type).join(", ") ?? "",
+  body: item?.body ?? "",
+  links: item?.links ?? [],
   note: "",
 });
 
@@ -642,22 +668,31 @@ const buildLineDiff = (before: string, after: string): DiffLine[] => {
 
 function App() {
   const [workspace, setWorkspace] = useState<StoriaState>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return seedState();
-
     try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (!stored) return seedState();
       return normalizeState(JSON.parse(stored) as StoriaState);
     } catch {
       return seedState();
     }
   });
   const [locale, setLocale] = useState<Locale>(() => {
-    const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
-    return isLocale(stored) ? stored : "ja";
+    try {
+      const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
+      return isLocale(stored) ? stored : "ja";
+    } catch { return "ja"; }
   });
-  const [selectedId, setSelectedId] = useState(workspace.items[0]?.id ?? "");
+  const selectedId = restoredItemId(workspace.items, workspace.selectedId);
+  const setSelectedId = (id: string) => setWorkspace((current) => ({ ...current, selectedId: id }));
+  const [saveFailed, setSaveFailed] = useState(false);
+  const [discovery, setDiscovery] = useState(() => ({
+    day: localDay(new Date()),
+    cards: discoverItems(workspace.items, selectedId, new Date()).map((card) => ({
+      ...card, item: workspace.items.find((item) => item.id === card.id)!,
+    })),
+  }));
   const [query, setQuery] = useState("");
-  const [draft, setDraft] = useState<Draft>(() => makeDraft(workspace.items[0]));
+  const [draft, setDraft] = useState<Draft>(() => makeDraft(workspace.items.find((item) => item.id === selectedId)));
   const [verticalReading, setVerticalReading] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const focusToggleRef = useRef<HTMLButtonElement>(null);
@@ -696,24 +731,55 @@ function App() {
   const workspaceRef = useRef(workspace);
   workspaceRef.current = workspace;
 
-  useEffect(() => {
-    if (persistTimer.current !== null) clearTimeout(persistTimer.current);
-    persistTimer.current = setTimeout(() => {
+  const persistWorkspace = () => {
+    try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaceRef.current));
-    }, 500);
+      setSaveFailed(false);
+    } catch {
+      setSaveFailed(true);
+    }
+  };
+
+  useEffect(() => {
+    persistTimer.current = setTimeout(persistWorkspace, 500);
+    return () => { if (persistTimer.current !== null) clearTimeout(persistTimer.current); };
   }, [workspace]);
 
   useEffect(() => {
+    const flush = () => persistWorkspace();
+    const onVisibility = () => { if (document.visibilityState === "hidden") flush(); };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      if (persistTimer.current !== null) {
-        clearTimeout(persistTimer.current);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaceRef.current));
-      }
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVisibility);
+      flush();
     };
   }, []);
 
+  const refreshDiscovery = () => {
+    const current = workspaceRef.current;
+    const now = new Date();
+    setDiscovery({ day: localDay(now), cards: discoverItems(current.items,
+      restoredItemId(current.items, current.selectedId), now).map((card) => ({
+        ...card, item: current.items.find((item) => item.id === card.id)!,
+      })) });
+  };
+
   useEffect(() => {
-    localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+    const checkDay = () => { if (localDay(new Date()) !== discovery.day) refreshDiscovery(); };
+    const timer = window.setInterval(checkDay, 30_000);
+    window.addEventListener("focus", checkDay);
+    document.addEventListener("visibilitychange", checkDay);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", checkDay);
+      document.removeEventListener("visibilitychange", checkDay);
+    };
+  }, [discovery.day]);
+
+  useEffect(() => {
+    try { localStorage.setItem(LOCALE_STORAGE_KEY, locale); } catch { /* Workspace save reports storage failure. */ }
   }, [locale]);
 
   useEffect(() => {
@@ -1220,6 +1286,19 @@ function App() {
           ))}
         </div>
 
+        <section className="discovery-panel" aria-labelledby="discovery-title">
+          <h2 id="discovery-title">{text.todayMaterials}</h2>
+          <button type="button" onClick={refreshDiscovery}>{text.refreshMaterials}</button>
+          <p className="discovery-help">{text.discoveryHelp}</p>
+          {discovery.cards.length ? discovery.cards.map(({ id, reason, item }) => (
+            <button className="discovery-card" type="button" key={id} onClick={() => setSelectedId(id)}>
+              <strong>{item.title}</strong>
+              <span>{Array.from(item.body.replace(/\s+/gu, " ").trim()).slice(0, 90).join("")}</span>
+              <small>{text[reason]}</small>
+            </button>
+          )) : <><p>{text.noMaterials}</p><button type="button" onClick={() => createItem("idea")}>{text.addIdea}</button></>}
+        </section>
+
         <div className="item-list">
           {filteredItems.map((item) => (
             <button
@@ -1324,6 +1403,23 @@ function App() {
               placeholder={text.tagsPlaceholder}
             />
           </label>
+
+          <div className="editor-support">
+          <details className="resume-note" key={selectedItem.id}>
+            <summary>{text.resumeNote}</summary>
+            <label>
+              <span id="resume-note-label">{text.resumeNote}</span>
+              <textarea rows={3} aria-labelledby="resume-note-label" value={selectedItem.resumeNote ?? ""}
+                placeholder={text.resumeExample}
+                onChange={(event) => {
+                  const resumeNote = event.currentTarget.value;
+                  setWorkspace((current) => ({ ...current, items: current.items.map((item) =>
+                    item.id === selectedItem.id ? { ...item, resumeNote, updatedAt: nowIso() } : item) }));
+                }} />
+            </label>
+          </details>
+          {saveFailed && <div role="alert">{text.saveFailed} <button type="button" onClick={persistWorkspace}>{text.retrySave}</button></div>}
+          </div>
 
           <label className="field-block markdown-field">
             <span>Markdown</span>

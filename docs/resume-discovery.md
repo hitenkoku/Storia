@@ -18,7 +18,7 @@ Cards retain the title, excerpt, and reason from selection time. They are select
 
 ## Verification
 
-Requires Node 24 (native TypeScript stripping for pure-function tests):
+Requires Node.js 22.6+ (using `--experimental-strip-types` via `npm test`; Node 24+ also works):
 
 ```sh
 npm ci

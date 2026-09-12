@@ -23,7 +23,7 @@ The UI uses the `CloudBackupProvider` boundary in `src/cloud.ts`, while serializ
 
 Credentials and provider configuration are excluded from the artifact. WebDAV credentials, including the endpoint and username, are serialized only inside the operating system credential store entry `com.hitenkoku.storia.cloud-backup` / `webdav`. The Windows build uses Windows Credential Manager; supported macOS and Linux builds use their native keychain service through `keyring`.
 
-Backup filenames use UTC and sort chronologically, for example `storia-backup-20260912T123456Z.json`.
+Backup filenames include UTC milliseconds and sort chronologically, for example `storia-backup-20260912T123456789Z.json`. Milliseconds prevent two backups prepared within one second from replacing each other.
 
 ## User flow
 
@@ -32,7 +32,7 @@ Backup filenames use UTC and sort chronologically, for example `storia-backup-20
 3. Choose **Back up to cloud**. Storia prepares an immutable snapshot and shows its item count, encoded size, filename, and destination.
 4. Confirm the upload. Storia sends one JSON file with `PUT` and reports the timestamp and exact destination.
 
-Authentication, storage quota, offline, server, invalid configuration, and credential-store failures are shown separately. A failed upload keeps the prepared snapshot available for retry and does not mutate the workspace.
+Authentication, write permission, storage quota, offline, server, invalid configuration, and credential-store failures are shown separately. A failed upload keeps the prepared snapshot available through reauthentication and retry, and does not mutate the workspace. WebDAV redirects are rejected so the confirmed HTTPS destination cannot silently change.
 
 The public browser build explains that this function requires the desktop app because secrets and network access are deliberately kept on the Rust side.
 

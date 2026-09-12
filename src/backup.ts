@@ -63,7 +63,6 @@ export const parseBackup = async <T = unknown>(source: string): Promise<StoriaBa
 };
 
 export const backupFilename = (date = new Date()) => {
-  const stamp = date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  const stamp = date.toISOString().replace(/[-:.]/g, "");
   return `storia-backup-${stamp}.json`;
 };
-

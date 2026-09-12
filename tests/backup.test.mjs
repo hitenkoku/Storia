@@ -42,6 +42,9 @@ test('legacy workspace fields are preserved without mutation', async () => {
 });
 
 test('filename is portable and sortable', () => {
-  assert.equal(backupFilename(new Date('2026-09-12T12:34:56.789Z')), 'storia-backup-20260912T123456Z.json');
+  assert.equal(backupFilename(new Date('2026-09-12T12:34:56.789Z')), 'storia-backup-20260912T123456789Z.json');
+  assert.notEqual(
+    backupFilename(new Date('2026-09-12T12:34:56.001Z')),
+    backupFilename(new Date('2026-09-12T12:34:56.002Z')),
+  );
 });
-

@@ -100,9 +100,13 @@ fn destination_url(endpoint: &str, filename: &str) -> Result<Url, CloudError> {
 
 fn map_status(status: StatusCode) -> CloudError {
     match status.as_u16() {
-        401 | 403 => CloudError::new(
+        401 => CloudError::new(
             "unauthorized",
             "Authentication was denied. Reconnect and try again.",
+        ),
+        403 => CloudError::new(
+            "permission",
+            "This account cannot write to the selected WebDAV folder.",
         ),
         413 | 507 => CloudError::new(
             "quota",
@@ -125,6 +129,7 @@ fn map_request(error: reqwest::Error) -> CloudError {
 
 fn client() -> Result<reqwest::Client, CloudError> {
     reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
         .connect_timeout(Duration::from_secs(10))
         .timeout(Duration::from_secs(30))
         .user_agent(concat!("Storia/", env!("CARGO_PKG_VERSION")))
@@ -276,12 +281,12 @@ mod tests {
     fn destination_encodes_filename_and_keeps_folder_path() {
         let result = destination_url(
             "https://cloud.example.test/dav/backups/",
-            "storia-backup-20260912T123456Z.json",
+            "storia-backup-20260912T123456789Z.json",
         )
         .unwrap();
         assert_eq!(
             result.as_str(),
-            "https://cloud.example.test/dav/backups/storia-backup-20260912T123456Z.json"
+            "https://cloud.example.test/dav/backups/storia-backup-20260912T123456789Z.json"
         );
         assert!(destination_url("https://cloud.example.test/dav", "../secret.json").is_err());
     }
@@ -289,6 +294,7 @@ mod tests {
     #[test]
     fn response_errors_are_stable_categories() {
         assert_eq!(map_status(StatusCode::UNAUTHORIZED).kind, "unauthorized");
+        assert_eq!(map_status(StatusCode::FORBIDDEN).kind, "permission");
         assert_eq!(map_status(StatusCode::INSUFFICIENT_STORAGE).kind, "quota");
         assert_eq!(map_status(StatusCode::INTERNAL_SERVER_ERROR).kind, "server");
     }

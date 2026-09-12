@@ -58,7 +58,7 @@ try {
   await backup.getByRole('button', { name: 'Back up to cloud' }).click();
   await backup.getByText('Confirm upload', { exact: true }).waitFor();
   assert.match(await backup.innerText(), /Cloud story|1 items/);
-  assert.match(await backup.innerText(), /storia-backup-\d{8}T\d{6}Z\.json/);
+  assert.match(await backup.innerText(), /storia-backup-\d{8}T\d{9}Z\.json/);
 
   await backup.getByRole('button', { name: 'Upload this backup' }).click();
   await backup.getByRole('alert').waitFor();
@@ -77,6 +77,17 @@ try {
   assert.equal(artifact.workspace.items[0].title, 'Cloud story');
   assert.equal(artifact.settings.locale, 'en');
   assert.match(artifact.checksum, /^[a-f0-9]{64}$/);
+
+  await backup.getByRole('button', { name: 'Back up to cloud' }).click();
+  await page.evaluate(() => { window.__failUpload = true; });
+  await backup.getByRole('button', { name: 'Upload this backup' }).click();
+  await backup.getByRole('button', { name: 'Reauthenticate' }).click();
+  await backup.getByLabel('Password / app password').fill('fresh-secret');
+  await backup.getByRole('button', { name: 'Connect', exact: true }).click();
+  assert.ok(await backup.getByText('Confirm upload', { exact: true }).isVisible(), 'prepared snapshot survives reauthentication');
+  await page.evaluate(() => { window.__failUpload = false; });
+  await backup.getByRole('button', { name: 'Upload this backup' }).click();
+  await backup.getByRole('status').waitFor();
 
   await backup.getByRole('button', { name: 'Reauthenticate' }).click();
   assert.equal(await backup.getByLabel('Password / app password').inputValue(), '');

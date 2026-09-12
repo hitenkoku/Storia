@@ -4,7 +4,7 @@ import { backupFilename, createBackup } from "./backup";
 import { webDavProvider, type ConnectionStatus } from "./cloud";
 
 type Locale = "ja" | "en";
-type PendingBackup = { filename: string; content: string; bytes: number };
+type PendingBackup = { filename: string; content: string; bytes: number; itemCount: number };
 type CloudFailure = { kind?: string; message?: string };
 
 const COPY = {
@@ -36,6 +36,7 @@ const COPY = {
     unknownError: "バックアップ処理に失敗しました。",
     errors: {
       unauthorized: "認証が拒否されました。再認証してください。",
+      permission: "このWebDAVフォルダーへの書き込みが許可されていません。",
       quota: "クラウド側の空き容量が不足しています。",
       offline: "WebDAVサーバーへ接続できません。ネットワークを確認してください。",
       server: "WebDAVサーバーでエラーが発生しました。",
@@ -72,6 +73,7 @@ const COPY = {
     unknownError: "The backup operation failed.",
     errors: {
       unauthorized: "Authentication was denied. Reauthenticate and try again.",
+      permission: "This account cannot write to the selected WebDAV folder.",
       quota: "The cloud destination does not have enough available storage.",
       offline: "The WebDAV server could not be reached. Check your network.",
       server: "The WebDAV server returned an error.",
@@ -130,7 +132,6 @@ export function CloudBackup({ workspace, locale }: { workspace: { items: unknown
       setStatus(next);
       setPassword("");
       setShowCredentials(false);
-      setPending(null);
     } catch (cause) {
       setError(failureText(cause, locale));
     } finally {
@@ -160,7 +161,7 @@ export function CloudBackup({ workspace, locale }: { workspace: { items: unknown
     try {
       const filename = backupFilename();
       const content = await createBackup(workspace, { locale });
-      setPending({ filename, content, bytes: new TextEncoder().encode(content).byteLength });
+      setPending({ filename, content, bytes: new TextEncoder().encode(content).byteLength, itemCount: workspace.items.length });
     } catch (cause) {
       setError(failureText(cause, locale));
     }
@@ -219,7 +220,7 @@ export function CloudBackup({ workspace, locale }: { workspace: { items: unknown
         <section className="cloud-confirm" aria-labelledby="cloud-confirm-title">
           <h3 id="cloud-confirm-title">{text.confirmTitle}</h3>
           <dl>
-            <div><dt>{text.workspace}</dt><dd>{workspace.items.length.toLocaleString(locale)} {text.items}</dd></div>
+            <div><dt>{text.workspace}</dt><dd>{pending.itemCount.toLocaleString(locale)} {text.items}</dd></div>
             <div><dt>{text.size}</dt><dd>{new Intl.NumberFormat(locale, { style: "unit", unit: "kilobyte", maximumFractionDigits: 1 }).format(pending.bytes / 1000)}</dd></div>
             <div><dt>{text.filename}</dt><dd>{pending.filename}</dd></div>
             <div><dt>{text.destination}</dt><dd>{status.endpoint}</dd></div>

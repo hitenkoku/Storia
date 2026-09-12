@@ -21,6 +21,7 @@ import "./App.css";
 import { DEFAULT_LINK_KIND, LINK_KINDS, isLinkKind, normalizeLinks, toggleItemLink, changeLinkKind, inheritLinks, updateForeshadow, type ItemLink, type LinkKind } from "./links";
 import { discoverItems, localDay, restoredItemId } from "./discovery";
 import { graphPositions, isolatedItemIds, writingStats } from "./exploration";
+import { CloudBackup } from "./CloudBackup";
 
 type WorkType = "article" | "idea";
 type GrowthStatus = "seed" | "sprout" | "draft" | "revised" | "published";
@@ -1222,6 +1223,8 @@ function App() {
             <option value="en">English</option>
           </select>
         </label>
+
+        <CloudBackup workspace={workspace} locale={locale} />
 
         <div className="toolbar">
           <button className="icon-button" type="button" onClick={() => createItem("article")} title={text.addArticle} aria-label={text.addArticle}>

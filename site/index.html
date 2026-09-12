@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Storiaは、アイデア、原稿、伏線、改稿履歴をつなぎながら物語を育てるデスクトップ執筆アプリです。" />
+    <meta name="theme-color" content="#171713" />
+    <title>Storia — 思いつきを、物語へ。</title>
+    <link rel="icon" href="./mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./main.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main" data-ja="本文へ移動" data-en="Skip to content">本文へ移動</a>
+    <header class="site-header">
+      <a class="wordmark" href="#top" aria-label="Storia home">
+        <span class="wordmark-mark" aria-hidden="true">S</span>
+        <span>Storia</span>
+      </a>
+      <nav aria-label="Main navigation">
+        <a href="#features" data-ja="できること" data-en="Features">できること</a>
+        <a href="#flow" data-ja="書く流れ" data-en="Workflow">書く流れ</a>
+        <a href="https://github.com/hitenkoku/Storia" data-ja="GitHub" data-en="GitHub">GitHub</a>
+        <button class="language-switch" type="button" aria-label="Switch language" aria-pressed="false">EN</button>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top">
+        <div class="hero-copy">
+          <p class="eyebrow" data-ja="創作のためのデスクトップアプリ" data-en="A desktop writing app">創作のためのデスクトップアプリ</p>
+          <h1 data-ja="思いつきを、<br>物語へ。" data-en="Turn sparks<br>into stories.">思いつきを、<br>物語へ。</h1>
+          <p class="lead" data-ja="アイデアをつなぎ、伏線を育て、昨日の続きから書き始める。Storiaは、物語とその素材を一緒に育てる執筆アプリです。" data-en="Connect ideas, nurture foreshadowing, and return to yesterday’s thread. Storia keeps your story and everything around it growing together.">アイデアをつなぎ、伏線を育て、昨日の続きから書き始める。Storiaは、物語とその素材を一緒に育てる執筆アプリです。</p>
+          <div class="hero-actions">
+            <a class="button primary" href="https://github.com/hitenkoku/Storia" data-ja="GitHubで見る" data-en="View on GitHub">GitHubで見る</a>
+            <a class="button text-button" href="#features" data-ja="Storiaを知る ↓" data-en="Meet Storia ↓">Storiaを知る ↓</a>
+          </div>
+          <p class="availability" data-ja="Windows / macOS / Linux — 初回リリース準備中" data-en="Windows / macOS / Linux — First release in preparation">Windows / macOS / Linux — 初回リリース準備中</p>
+        </div>
+
+        <div class="workspace-frame" aria-label="Storia application preview">
+          <div class="window-bar"><span></span><span></span><span></span><strong>Storia</strong></div>
+          <div class="workspace">
+            <aside class="mock-library">
+              <div class="mock-logo"><b>S</b><span>Storia<small data-ja="物語の庭" data-en="Story garden">物語の庭</small></span></div>
+              <button class="mock-new"><span>＋</span><span data-ja="新しい原稿" data-en="New draft">新しい原稿</span></button>
+              <label data-ja="ライブラリ" data-en="LIBRARY">ライブラリ</label>
+              <div class="mock-item active"><i></i><span data-ja="雨の図書館" data-en="The Library in Rain">雨の図書館</span></div>
+              <div class="mock-item"><i></i><span data-ja="古い鍵の由来" data-en="The old key">古い鍵の由来</span></div>
+              <div class="mock-item"><i></i><span data-ja="第二章の断片" data-en="Chapter two fragment">第二章の断片</span></div>
+            </aside>
+            <article class="mock-editor">
+              <div class="editor-meta"><span data-ja="原稿 · 下書き" data-en="ARTICLE · DRAFT">原稿 · 下書き</span><button data-ja="集中モード" data-en="Focus mode">集中モード</button></div>
+              <h2 data-ja="雨の図書館" data-en="The Library in Rain">雨の図書館</h2>
+              <div class="tag-row"><span>雨</span><span data-ja="記憶" data-en="memory">記憶</span><span data-ja="第一章" data-en="chapter 1">第一章</span></div>
+              <div class="manuscript" lang="ja">
+                <p data-ja="雨は、閉館した図書館の窓を静かに叩いていた。" data-en="Rain tapped softly against the windows of the closed library.">雨は、閉館した図書館の窓を静かに叩いていた。</p>
+                <p data-ja="栞を挟んだはずの頁から、見覚えのない古い鍵が滑り落ちる。" data-en="An old, unfamiliar key slipped from the page where she had left her bookmark.">栞を挟んだはずの頁から、見覚えのない古い鍵が滑り落ちる。</p>
+                <p class="faded" data-ja="「これは、どこの扉を開ける鍵だろう」" data-en="“What door were you made to open?”">「これは、どこの扉を開ける鍵だろう」</p>
+              </div>
+              <div class="resume-card"><span data-ja="次に書くこと" data-en="NEXT WRITING STEP">次に書くこと</span><p data-ja="鍵の刻印と、司書が隠した手紙をつなぐ。" data-en="Connect the key’s engraving to the letter hidden by the librarian.">鍵の刻印と、司書が隠した手紙をつなぐ。</p></div>
+            </article>
+            <aside class="mock-knowledge">
+              <label data-ja="つながり" data-en="CONNECTIONS">つながり</label>
+              <div class="graph" aria-hidden="true"><svg viewBox="0 0 220 130"><path d="M38 82 C78 20 127 20 174 63"/><path d="M38 82 C88 120 139 115 174 63"/><circle cx="38" cy="82" r="12"/><circle cx="102" cy="35" r="8"/><circle cx="174" cy="63" r="12"/><circle cx="119" cy="111" r="7"/></svg></div>
+              <div class="connection-card"><span data-ja="伏線" data-en="FORESHADOWING">伏線</span><strong data-ja="古い鍵の由来" data-en="The old key">古い鍵の由来</strong><small data-ja="未回収 · 意図メモあり" data-en="Open · Intent noted">未回収 · 意図メモあり</small></div>
+              <label data-ja="今日の素材" data-en="TODAY’S MATERIALS">今日の素材</label>
+              <div class="suggestion" data-ja="七日前の断片を読み返す" data-en="Return to a fragment from last week">七日前の断片を読み返す</div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="manifesto" aria-label="Product principle">
+        <p data-ja="物語は、一直線には生まれない。" data-en="Stories are rarely born in a straight line.">物語は、一直線には生まれない。</p>
+        <p data-ja="断片も、迷いも、書き直した跡も。すべてが次の一行につながっていく。" data-en="Fragments, uncertainty, and every revision can all lead to the next line.">断片も、迷いも、書き直した跡も。すべてが次の一行につながっていく。</p>
+      </section>
+
+      <section class="features" id="features">
+        <div class="section-heading"><p>01 — 03</p><h2 data-ja="書くために、<br>考え続けるために。" data-en="For writing.<br>For staying with the story.">書くために、<br>考え続けるために。</h2></div>
+        <div class="feature-grid">
+          <article><span>01</span><div class="feature-icon">✎</div><h3 data-ja="言葉に集中する" data-en="Stay with the words">言葉に集中する</h3><p data-ja="Markdownとライブプレビュー、縦書き・横書きの読者表示、集中モード。作品のリズムを確かめながら書けます。" data-en="Write in Markdown, preview as you go, read vertically or horizontally, and enter focus mode when the words need your full attention.">Markdownとライブプレビュー、縦書き・横書きの読者表示、集中モード。作品のリズムを確かめながら書けます。</p></article>
+          <article><span>02</span><div class="feature-icon">⌘</div><h3 data-ja="素材をつなぐ" data-en="Connect the material">素材をつなぐ</h3><p data-ja="アイデアと原稿を関係の種類ごとにつなぎ、グラフで見渡せます。伏線には意図と回収状態を残せます。" data-en="Link ideas and drafts by relationship, then see the whole story as a graph. Record intent and payoff state for every thread.">アイデアと原稿を関係の種類ごとにつなぎ、グラフで見渡せます。伏線には意図と回収状態を残せます。</p></article>
+          <article><span>03</span><div class="feature-icon">↻</div><h3 data-ja="続きを見つける" data-en="Find where to continue">続きを見つける</h3><p data-ja="「次に書くこと」を作品ごとに残し、眠っている断片や孤立したアイデアを再発見。再開の摩擦を小さくします。" data-en="Leave a next-step note for each piece and rediscover dormant fragments or isolated ideas. Returning to the work feels lighter.">「次に書くこと」を作品ごとに残し、眠っている断片や孤立したアイデアを再発見。再開の摩擦を小さくします。</p></article>
+        </div>
+      </section>
+
+      <section class="flow" id="flow">
+        <div class="flow-copy"><p class="eyebrow" data-ja="創作の循環" data-en="A CREATIVE LOOP">創作の循環</p><h2 data-ja="残す。つなぐ。<br>また、書き始める。" data-en="Capture. Connect.<br>Begin again.">残す。つなぐ。<br>また、書き始める。</h2><p data-ja="ひらめきは短い断片として残し、育ったら原稿へ。改稿履歴も関係性も失わず、次に開いたときには続きを書く場所が見つかります。" data-en="Capture a spark as a fragment, let it grow into a draft, and keep its revisions and relationships intact. The next time you open Storia, your way back in is waiting.">ひらめきは短い断片として残し、育ったら原稿へ。改稿履歴も関係性も失わず、次に開いたときには続きを書く場所が見つかります。</p></div>
+        <ol><li><b>01</b><span data-ja="断片を残す" data-en="Capture a fragment">断片を残す</span></li><li><b>02</b><span data-ja="物語へつなぐ" data-en="Connect it to the story">物語へつなぐ</span></li><li><b>03</b><span data-ja="育てて書く" data-en="Grow it into prose">育てて書く</span></li><li><b>04</b><span data-ja="次の入口を残す" data-en="Leave a way back in">次の入口を残す</span></li></ol>
+      </section>
+
+      <section class="closing">
+        <p class="eyebrow">STORIA</p>
+        <h2 data-ja="あなたの物語が、<br>途切れない場所。" data-en="A place where your<br>story keeps moving.">あなたの物語が、<br>途切れない場所。</h2>
+        <a class="button light" href="https://github.com/hitenkoku/Storia" data-ja="GitHubでプロジェクトを見る ↗" data-en="View the project on GitHub ↗">GitHubでプロジェクトを見る ↗</a>
+        <p data-ja="初回リリースを準備しています。" data-en="The first release is in preparation.">初回リリースを準備しています。</p>
+      </section>
+    </main>
+    <footer><a class="wordmark" href="#top"><span class="wordmark-mark">S</span><span>Storia</span></a><p>© 2026 Storia · MIT License</p><a href="https://github.com/hitenkoku/Storia">GitHub ↗</a></footer>
+  </body>
+</html>

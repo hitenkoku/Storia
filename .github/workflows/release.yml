@@ -1,0 +1,86 @@
+name: Build Storia release draft
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  build-release:
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: --target aarch64-apple-darwin
+          - platform: macos-latest
+            args: --target x86_64-apple-darwin
+          - platform: ubuntu-22.04
+            args: ""
+          - platform: windows-latest
+            args: ""
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Cache Rust build artifacts
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri -> target
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build and attach release packages
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: Storia v__VERSION__ — Preview
+          releaseBody: |
+            Storia's first public preview brings ideas, drafts, relationships, and revision history into one writing workspace.
+
+            Highlights:
+            - Capture fragments and grow ideas into articles.
+            - Connect material with typed links and explore it as a graph.
+            - Track foreshadowing intent and payoff state.
+            - Return through per-item next-step notes and daily material discovery.
+            - Write and read in Japanese or English, including vertical Japanese preview.
+
+            This is an early preview. Writing is stored locally in the app WebView. Cloud sync, automatic backups, and file import/export are not available yet, so keep a separate copy of important manuscripts.
+
+            The packages are not backed by paid Windows or Apple distribution certificates. Your operating system may ask you to confirm that you trust the application.
+          releaseDraft: true
+          prerelease: true
+          args: ${{ matrix.args }}

@@ -2,6 +2,7 @@ import { CloudUpload, LogOut, RefreshCw, ShieldCheck } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { backupFilename, createBackup } from "./backup";
 import { webDavProvider, type ConnectionStatus } from "./cloud";
+import type { WritingSoundSettings } from "./writingSound";
 
 type Locale = "ja" | "en";
 type PendingBackup = { filename: string; content: string; bytes: number; itemCount: number };
@@ -95,7 +96,7 @@ const failureText = (error: unknown, locale: Locale) => {
   return failure.message || copy.unknownError;
 };
 
-export function CloudBackup({ workspace, locale }: { workspace: { items: unknown[] }; locale: Locale }) {
+export function CloudBackup({ workspace, locale, writingSound }: { workspace: { items: unknown[] }; locale: Locale; writingSound: WritingSoundSettings }) {
   const text = COPY[locale];
   const desktop = isDesktop();
   const [status, setStatus] = useState<ConnectionStatus>({ connected: false });
@@ -160,7 +161,7 @@ export function CloudBackup({ workspace, locale }: { workspace: { items: unknown
     setCompleted(null);
     try {
       const filename = backupFilename();
-      const content = await createBackup(workspace, { locale });
+      const content = await createBackup(workspace, { locale, writingSound });
       setPending({ filename, content, bytes: new TextEncoder().encode(content).byteLength, itemCount: workspace.items.length });
     } catch (cause) {
       setError(failureText(cause, locale));

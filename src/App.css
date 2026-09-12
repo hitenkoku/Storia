@@ -147,6 +147,79 @@ button {
   background: rgba(255, 255, 255, 0.06);
 }
 
+.writing-sound-settings {
+  margin: 14px 0 0;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.writing-sound-settings summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.writing-sound-settings > p {
+  color: #c9c0b2;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.writing-sound-settings label {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+  color: #c9c0b2;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.writing-sound-settings select {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  color: #f8f4ec;
+  background: #30363a;
+}
+
+.writing-sound-settings input[type="range"] {
+  width: 100%;
+  min-height: 28px;
+  accent-color: #f3d17c;
+}
+
+.writing-sound-settings > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 36px;
+  margin-top: 10px;
+  padding: 6px 9px;
+  border: 1px solid #d6ac4a;
+  border-radius: 6px;
+  color: #222629;
+  background: #f3d17c;
+}
+
+.writing-sound-settings > button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.writing-sound-settings summary:focus-visible,
+.writing-sound-settings select:focus-visible,
+.writing-sound-settings input:focus-visible,
+.writing-sound-settings button:focus-visible { outline: 3px solid #8fbbdc; outline-offset: 2px; }
+
 .cloud-backup summary {
   display: flex;
   align-items: center;

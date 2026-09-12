@@ -76,6 +76,7 @@ try {
   assert.equal(artifact.version, 1);
   assert.equal(artifact.workspace.items[0].title, 'Cloud story');
   assert.equal(artifact.settings.locale, 'en');
+  assert.deepEqual(artifact.settings.writingSound, { mode: 'off', volume: 0.35 });
   assert.match(artifact.checksum, /^[a-f0-9]{64}$/);
 
   await backup.getByRole('button', { name: 'Back up to cloud' }).click();

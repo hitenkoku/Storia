@@ -15,11 +15,13 @@ const workspace = {
 
 test('complete ja/en workspace round trips with version and integrity metadata', async () => {
   for (const locale of ['ja', 'en']) {
-    const source = await createBackup(workspace, { locale }, new Date('2026-09-12T12:34:56.000Z'));
+    const writingSound = { mode: locale === 'ja' ? 'pen' : 'typewriter', volume: 0.45 };
+    const source = await createBackup(workspace, { locale, writingSound }, new Date('2026-09-12T12:34:56.000Z'));
     const restored = await parseBackup(source);
     assert.equal(restored.format, BACKUP_FORMAT);
     assert.equal(restored.version, BACKUP_VERSION);
     assert.equal(restored.settings.locale, locale);
+    assert.deepEqual(restored.settings.writingSound, writingSound);
     assert.deepEqual(restored.workspace, workspace);
     assert.match(restored.checksum, /^[a-f0-9]{64}$/);
   }

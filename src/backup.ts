@@ -3,6 +3,10 @@ export const BACKUP_VERSION = 1;
 
 export type BackupSettings = {
   locale: "ja" | "en";
+  writingSound?: {
+    mode: "off" | "pen" | "typewriter";
+    volume: number;
+  };
 };
 
 export type StoriaBackup<T = unknown> = {

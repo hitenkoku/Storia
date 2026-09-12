@@ -80,10 +80,21 @@ nav a:hover, nav a:focus-visible { opacity:1; }
 .feature-grid p { color:var(--muted); font-size:.96rem; line-height:1.9; }
 .flow { display:grid; grid-template-columns:1fr 1fr; gap:10vw; padding:9rem clamp(1.5rem,8vw,9rem); background:var(--paper-2); }
 .flow h2 { font-size:clamp(2.5rem,4.5vw,4.8rem); }
-.flow-copy>p:last-child { max-width:560px; color:var(--muted); line-height:2; }
-.flow ol { margin:0; padding:0; list-style:none; border-top:1px solid var(--ink); }
-.flow li { display:grid; grid-template-columns:70px 1fr; padding:1.5rem .5rem; border-bottom:1px solid var(--line); font-family:"Yu Mincho",Georgia,serif; font-size:1.15rem; }
-.flow li b { color:var(--red); font-family:"Segoe UI",sans-serif; font-size:.75rem; }
+.flow-copy>p:not(.eyebrow) { max-width:560px; color:var(--muted); line-height:2; }
+.flow-copy .flow-help { margin-top:2rem; padding-left:1rem; border-left:2px solid var(--red); color:var(--ink); font-size:.9rem; line-height:1.7; }
+.flow-steps { margin:0; padding:0; list-style:none; border-top:1px solid var(--ink); }
+.flow-steps li { border-bottom:1px solid var(--line); }
+.flow-steps details { padding:0 .5rem; }
+.flow-steps summary { display:grid; grid-template-columns:70px 1fr auto; align-items:center; gap:1rem; padding:1.5rem 0; cursor:pointer; list-style:none; font-family:"Yu Mincho",Georgia,serif; font-size:1.15rem; }
+.flow-steps summary::-webkit-details-marker { display:none; }
+.flow-steps summary b { color:var(--red); font-family:"Segoe UI",sans-serif; font-size:.75rem; }
+.flow-link { display:flex; align-items:center; gap:.6rem; font-family:"Segoe UI","Yu Gothic UI",sans-serif; font-size:.76rem; color:var(--muted); }
+.flow-link::after { content:"＋"; display:grid; place-items:center; width:28px; height:28px; border:1px solid currentColor; border-radius:50%; font-size:1rem; line-height:1; }
+.flow-steps details[open] .flow-link::after { content:"−"; }
+.flow-steps summary:hover .flow-link,.flow-steps summary:focus-visible .flow-link { color:var(--red); }
+.flow-detail { margin:0 0 1.8rem 70px; padding:1.25rem 1.4rem; border-left:2px solid var(--red); background:rgba(255,255,255,.34); }
+.flow-detail strong { display:block; margin-bottom:.55rem; font-size:.92rem; }
+.flow-detail p { margin:0; color:var(--muted); font-size:.9rem; line-height:1.85; }
 .closing { padding:10rem 1.5rem; color:#f5f0e7; background:var(--red); text-align:center; }
 .closing h2 { font-size:clamp(3rem,6vw,6.5rem); }
 .button.light { margin:2rem 0; color:var(--ink); background:#f8f4ec; }
@@ -93,5 +104,5 @@ footer .wordmark { font-size:1rem; }
 footer .wordmark-mark { width:28px; height:28px; }
 
 @media (max-width:1050px) { .hero { grid-template-columns:1fr; padding-right:0; padding-top:150px; } .hero-copy { padding-right:1.5rem; } .workspace-frame { width:860px; transform:none; } .feature-grid { grid-template-columns:1fr; } .feature-grid article { min-height:auto; } .feature-icon { margin:2rem 0; } }
-@media (max-width:720px) { .site-header { height:72px; } nav a { display:none; } .hero { min-height:auto; padding-left:1.25rem; padding-bottom:4rem; } .hero h1 { font-size:3.7rem; } .workspace-frame { width:760px; transform:scale(.72); transform-origin:left top; margin-bottom:-150px; } .manifesto { padding:6rem 1.5rem; text-align:left; } .features { padding:6rem 1.25rem; } .section-heading { display:block; } .feature-grid { margin-top:3rem; } .flow { grid-template-columns:1fr; padding:6rem 1.25rem; } .closing { padding:7rem 1.25rem; } footer { flex-wrap:wrap; gap:1.5rem; } }
+@media (max-width:720px) { .site-header { height:72px; } nav a { display:none; } .hero { min-height:auto; padding-left:1.25rem; padding-bottom:4rem; } .hero h1 { font-size:3.7rem; } .workspace-frame { width:760px; transform:scale(.72); transform-origin:left top; margin-bottom:-150px; } .manifesto { padding:6rem 1.5rem; text-align:left; } .features { padding:6rem 1.25rem; } .section-heading { display:block; } .feature-grid { margin-top:3rem; } .flow { grid-template-columns:1fr; padding:6rem 1.25rem; } .flow-steps summary { grid-template-columns:42px 1fr auto; gap:.6rem; } .flow-detail { margin-left:42px; } .flow-link { font-size:0; } .flow-link::after { font-size:1rem; } .closing { padding:7rem 1.25rem; } footer { flex-wrap:wrap; gap:1.5rem; } }
 @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } * { transition:none!important; } }

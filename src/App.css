@@ -139,6 +139,136 @@ button {
   margin-top: 14px;
 }
 
+.cloud-backup {
+  margin: 14px 0 0;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.cloud-backup summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cloud-backup > p,
+.cloud-backup small {
+  color: #c9c0b2;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.cloud-notice,
+.cloud-error {
+  padding: 8px;
+  border-radius: 6px;
+  background: rgba(243, 209, 124, 0.12);
+}
+
+.cloud-credentials,
+.cloud-confirm,
+.cloud-connection {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.cloud-credentials label {
+  display: grid;
+  gap: 5px;
+  color: #c9c0b2;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.cloud-credentials input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  color: #f8f4ec;
+  background: #30363a;
+}
+
+.cloud-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.cloud-actions button,
+.cloud-prepare,
+.cloud-error button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 6px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  color: #f8f4ec;
+  background: #30363a;
+}
+
+.cloud-primary {
+  color: #222629 !important;
+  background: #f3d17c !important;
+  border-color: #d6ac4a !important;
+}
+
+.cloud-prepare {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.cloud-connection p,
+.cloud-success {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+}
+
+.cloud-confirm {
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.cloud-confirm h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.cloud-confirm dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.76rem;
+}
+
+.cloud-confirm dl div {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 6px;
+}
+
+.cloud-confirm dt { color: #c9c0b2; }
+.cloud-confirm dd { margin: 0; overflow-wrap: anywhere; }
+.cloud-success { margin-top: 10px; color: #bde5ad; }
+.cloud-success small { display: block; margin-left: 4px; }
+.cloud-error { display: grid; gap: 8px; margin-top: 10px; color: #ffd1c7; font-size: 0.8rem; }
+.cloud-backup button:focus-visible,
+.cloud-backup summary:focus-visible,
+.cloud-backup input:focus-visible { outline: 3px solid #8fbbdc; outline-offset: 2px; }
+
 .locale-switch span {
   flex: 0 0 auto;
   color: #c9c0b2;

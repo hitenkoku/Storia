@@ -1,5 +1,6 @@
 use reqwest::{Method, StatusCode, Url};
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
 const CREDENTIAL_SERVICE: &str = "com.hitenkoku.storia.cloud-backup";
 const CREDENTIAL_ACCOUNT: &str = "webdav";
@@ -122,6 +123,15 @@ fn map_request(error: reqwest::Error) -> CloudError {
     }
 }
 
+fn client() -> Result<reqwest::Client, CloudError> {
+    reqwest::Client::builder()
+        .connect_timeout(Duration::from_secs(10))
+        .timeout(Duration::from_secs(30))
+        .user_agent(concat!("Storia/", env!("CARGO_PKG_VERSION")))
+        .build()
+        .map_err(|_| CloudError::new("server", "Could not initialize the WebDAV client."))
+}
+
 fn load_credential() -> Result<WebDavCredential, CloudError> {
     let secret = entry()?.get_password().map_err(|error| match error {
         keyring::Error::NoEntry => {
@@ -149,7 +159,7 @@ pub async fn connect_webdav(
             "Enter both a username and password.",
         ));
     }
-    let response = reqwest::Client::new()
+    let response = client()?
         .request(
             Method::from_bytes(b"PROPFIND").expect("valid method"),
             endpoint_url.clone(),
@@ -225,7 +235,7 @@ pub async fn upload_webdav_backup(
 ) -> Result<UploadResult, CloudError> {
     let credential = load_credential()?;
     let destination = destination_url(&credential.endpoint, &filename)?;
-    let response = reqwest::Client::new()
+    let response = client()?
         .put(destination.clone())
         .header("Content-Type", "application/json; charset=utf-8")
         .basic_auth(&credential.username, Some(&credential.password))

@@ -28,7 +28,7 @@ await context.addInitScript(() => {
 const page = await context.newPage();
 const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
-const url = process.env.STORIA_TEST_URL ?? 'http://127.0.0.1:1432';
+const url = process.env.STORIA_TEST_URL ?? 'http://127.0.0.1:1422';
 
 try {
   await page.goto(url);
@@ -57,13 +57,12 @@ try {
   assert.equal(await page.evaluate(() => window.__audioStarts), 2, 'body text plays');
 
   await body.evaluate((element) => {
+    element.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' }));
     element.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertCompositionText', data: 'か', isComposing: true }));
     element.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertCompositionText', data: 'かき', isComposing: true }));
+    element.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '確定' }));
   });
-  assert.equal(await page.evaluate(() => window.__audioStarts), 2, 'IME composition is silent');
-  await page.waitForTimeout(40);
-  await body.evaluate((element) => element.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: '確定', isComposing: false })));
-  assert.equal(await page.evaluate(() => window.__audioStarts), 3, 'IME commit plays once');
+  assert.equal(await page.evaluate(() => window.__audioStarts), 3, 'Chromium-order IME commit plays once');
 
   await page.waitForTimeout(40);
   await body.evaluate((element) => {

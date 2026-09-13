@@ -26,8 +26,7 @@ export const normalizeWritingSoundSettings = (value: unknown): WritingSoundSetti
 
 export const loadWritingSoundSettings = (storage?: Pick<Storage, "getItem">) => {
   try {
-    const resolvedStorage = storage ?? localStorage;
-    const stored = resolvedStorage.getItem(WRITING_SOUND_STORAGE_KEY);
+    const stored = (storage ?? localStorage).getItem(WRITING_SOUND_STORAGE_KEY);
     return stored ? normalizeWritingSoundSettings(JSON.parse(stored)) : { ...DEFAULT_WRITING_SOUND_SETTINGS };
   } catch {
     return { ...DEFAULT_WRITING_SOUND_SETTINGS };
@@ -39,8 +38,7 @@ export const saveWritingSoundSettings = (
   storage?: Pick<Storage, "setItem">,
 ) => {
   try {
-    const resolvedStorage = storage ?? localStorage;
-    resolvedStorage.setItem(WRITING_SOUND_STORAGE_KEY, JSON.stringify(normalizeWritingSoundSettings(settings)));
+    (storage ?? localStorage).setItem(WRITING_SOUND_STORAGE_KEY, JSON.stringify(normalizeWritingSoundSettings(settings)));
     return true;
   } catch {
     return false;
@@ -57,6 +55,8 @@ export const isConfirmedWritingInput = (event: InputLike) =>
   event.isComposing !== true &&
   (event.inputType === "insertText" || event.inputType === "insertLineBreak") &&
   (event.inputType === "insertLineBreak" || (typeof event.data === "string" && event.data.length > 0));
+
+export const isCompositionCommit = (data: string | null) => typeof data === "string" && data.length > 0;
 
 export class WritingSoundGate {
   private lastPlayedAt = Number.NEGATIVE_INFINITY;
@@ -91,30 +91,28 @@ export class WritingSoundEngine {
   }
 
   async play(preview = false) {
-    if (this.settings.mode === "off") return;
+    if (this.currentMode() === "off") return;
     try {
       const now = performance.now();
       if (!preview && !this.gate.allow(now)) return;
       const context = this.ensureContext();
       if (context.state === "suspended") await context.resume();
-      const mode = this.currentMode();
-      if (mode === "off") return;
-      if (mode === "pen") this.playPen(context);
+      if (this.currentMode() === "off") return;
+      if (this.currentMode() === "pen") this.playPen(context);
       else this.playTypewriter(context);
     } catch {
       // Audio feedback is optional and must never interrupt text input.
-      this.stopActiveSources();
-      const mode = this.currentMode();
-      if (this.master) this.master.gain.value = mode === "off" ? 0 : this.settings.volume;
+      this.stopActive();
+      if (this.master) this.master.gain.value = this.currentMode() === "off" ? 0 : this.settings.volume;
     }
   }
 
   silence() {
-    this.stopActiveSources();
     if (this.master) this.master.gain.value = 0;
+    this.stopActive();
   }
 
-  private stopActiveSources() {
+  private stopActive() {
     for (const source of this.active) {
       try { source.stop(); } catch { /* Source may already have ended. */ }
     }

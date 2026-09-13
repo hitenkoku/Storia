@@ -4,6 +4,7 @@ import {
   DEFAULT_WRITING_SOUND_SETTINGS,
   WritingSoundEngine,
   WritingSoundGate,
+  isCompositionCommit,
   isConfirmedWritingInput,
   loadWritingSoundSettings,
   normalizeWritingSoundSettings,
@@ -23,17 +24,18 @@ test('mode and bounded volume persist and restore', () => {
   assert.deepEqual(loadWritingSoundSettings(storage), { mode: 'typewriter', volume: 0.45 });
 });
 
-test('storage access stays best-effort when localStorage is unavailable', () => {
-  const originalStorage = globalThis.localStorage;
-  globalThis.localStorage = {
-    getItem() { throw new Error('blocked'); },
-    setItem() { throw new Error('blocked'); },
-  };
+test('blocked default storage access falls back without interrupting the app', () => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    get() { throw new Error('storage blocked'); },
+  });
   try {
     assert.deepEqual(loadWritingSoundSettings(), DEFAULT_WRITING_SOUND_SETTINGS);
-    assert.equal(saveWritingSoundSettings({ mode: 'pen', volume: 0.5 }), false);
+    assert.equal(saveWritingSoundSettings({ mode: 'pen', volume: 0.4 }), false);
   } finally {
-    globalThis.localStorage = originalStorage;
+    if (descriptor) Object.defineProperty(globalThis, 'localStorage', descriptor);
+    else delete globalThis.localStorage;
   }
 });
 
@@ -49,6 +51,9 @@ test('only confirmed inserted text and line breaks produce writing feedback', ()
     { inputType: 'historyUndo', data: null, isComposing: false },
     { inputType: undefined, data: null, isComposing: false },
   ]) assert.equal(isConfirmedWritingInput(event), false);
+  assert.equal(isCompositionCommit('確定'), true);
+  assert.equal(isCompositionCommit(''), false);
+  assert.equal(isCompositionCommit(null), false);
 });
 
 test('rapid input is dropped rather than queued', () => {
@@ -68,87 +73,80 @@ test('unavailable audio output never rejects or blocks writing', async () => {
   engine.dispose();
 });
 
-test('switching off during resume prevents delayed playback', async () => {
-  const originalAudioContext = globalThis.AudioContext;
-  let starts = 0;
+const installFakeAudioContext = () => {
+  const original = globalThis.AudioContext;
+  const contexts = [];
+  let nextResumePromise = null;
   class FakeNode {
     connect(target) { return target; }
   }
   class FakeSource extends FakeNode {
-    addEventListener() {}
-    start() { starts += 1; }
-    stop() {}
+    addEventListener(_name, callback) { this.ended = callback; }
+    start() { this.context.starts += 1; }
+    stop() { this.ended?.(); }
   }
-  globalThis.AudioContext = class {
+  class FakeAudioContext {
     constructor() {
       this.state = 'suspended';
       this.currentTime = 0;
-      this.sampleRate = 48000;
+      this.sampleRate = 100;
       this.destination = new FakeNode();
+      this.starts = 0;
+      this.resumeAttempts = 0;
+      this.resumePromise = null;
+      contexts.push(this);
     }
-    createGain() { const node = new FakeNode(); node.gain = { value: 1, setValueAtTime() {}, exponentialRampToValueAtTime() {} }; return node; }
-    createBiquadFilter() { const node = new FakeNode(); node.type = ''; node.frequency = { value: 0 }; node.Q = { value: 0 }; return node; }
-    createBuffer(_channels, length) { const data = new Float32Array(length); return { getChannelData: () => data }; }
-    createBufferSource() { return new FakeSource(); }
-    async resume() { engine.configure({ mode: 'off', volume: 0.35 }); this.state = 'running'; }
-    async close() { this.state = 'closed'; }
+    createGain() { const node = new FakeNode(); node.gain = { value: 1, setValueAtTime() {}, exponentialRampToValueAtTime() {} }; this.master ??= node; return node; }
+    createBiquadFilter() { const node = new FakeNode(); node.frequency = { value: 0 }; node.Q = { value: 0 }; return node; }
+    createBuffer(_channels, length) { return { getChannelData: () => new Float32Array(length) }; }
+    createBufferSource() { const source = new FakeSource(); source.context = this; return source; }
+    resume() { this.resumeAttempts += 1; return nextResumePromise ?? Promise.resolve().then(() => { this.state = 'running'; }); }
+    close() { return Promise.resolve(); }
+  }
+  globalThis.AudioContext = FakeAudioContext;
+  return {
+    contexts,
+    setResumePromise: (promise) => { nextResumePromise = promise; },
+    restore: () => { if (original) globalThis.AudioContext = original; else delete globalThis.AudioContext; },
   };
-  const engine = new WritingSoundEngine();
-  engine.configure({ mode: 'typewriter', volume: 0.35 });
+};
+
+test('switching off while audio resume is pending does not start a sound', async () => {
+  const fake = installFakeAudioContext();
   try {
-    await engine.play();
-    assert.equal(starts, 0);
-  } finally {
+    let release;
+    fake.setResumePromise(new Promise((resolve) => { release = resolve; }));
+    const engine = new WritingSoundEngine();
+    engine.configure({ mode: 'pen', volume: 0.35 });
+    const playing = engine.play();
+    const context = fake.contexts[0];
+    engine.configure({ mode: 'off', volume: 0.35 });
+    release?.();
+    context.state = 'running';
+    await playing;
+    assert.equal(context.starts, 0);
     engine.dispose();
-    globalThis.AudioContext = originalAudioContext;
+  } finally {
+    fake.restore();
   }
 });
 
-test('startup failures do not leave later playback muted', async () => {
-  const originalAudioContext = globalThis.AudioContext;
-  let starts = 0;
-  let failCreateBufferSource = true;
-  let gainNode;
-  class FakeNode {
-    connect(target) { return target; }
-  }
-  class FakeSource extends FakeNode {
-    addEventListener() {}
-    start() { starts += 1; }
-    stop() {}
-  }
-  globalThis.AudioContext = class {
-    constructor() {
-      this.state = 'running';
-      this.currentTime = 0;
-      this.sampleRate = 48000;
-      this.destination = new FakeNode();
-    }
-    createGain() {
-      const node = new FakeNode();
-      node.gain = { value: 1, setValueAtTime() {}, exponentialRampToValueAtTime() {} };
-      gainNode ??= node;
-      return node;
-    }
-    createBiquadFilter() { const node = new FakeNode(); node.type = ''; node.frequency = { value: 0 }; node.Q = { value: 0 }; return node; }
-    createBuffer(_channels, length) { const data = new Float32Array(length); return { getChannelData: () => data }; }
-    createBufferSource() {
-      if (failCreateBufferSource) throw new Error('transient');
-      return new FakeSource();
-    }
-    async resume() { this.state = 'running'; }
-    async close() { this.state = 'closed'; }
-  };
-  const engine = new WritingSoundEngine();
-  engine.configure({ mode: 'pen', volume: 0.35 });
+test('a transient resume failure does not leave later feedback muted', async () => {
+  const fake = installFakeAudioContext();
   try {
-    await engine.play();
-    assert.equal(gainNode.gain.value, 0.35);
-    failCreateBufferSource = false;
+    const engine = new WritingSoundEngine();
+    engine.configure({ mode: 'pen', volume: 0.42 });
     await engine.play(true);
-    assert.equal(starts, 1);
-  } finally {
+    const context = fake.contexts[0];
+    context.state = 'suspended';
+    fake.setResumePromise(Promise.reject(new Error('autoplay denied')));
+    await engine.play(true);
+    assert.equal(context.master.gain.value, 0.42);
+    fake.setResumePromise(Promise.resolve().then(() => { context.state = 'running'; }));
+    await engine.play(true);
+    assert.equal(context.starts, 2);
     engine.dispose();
-    globalThis.AudioContext = originalAudioContext;
+  } finally {
+    fake.restore();
   }
 });

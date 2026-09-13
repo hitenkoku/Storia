@@ -16,14 +16,14 @@ import {
   Tag,
   X,
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, type CompositionEvent as ReactCompositionEvent, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import { DEFAULT_LINK_KIND, LINK_KINDS, isLinkKind, normalizeLinks, toggleItemLink, changeLinkKind, inheritLinks, updateForeshadow, type ItemLink, type LinkKind } from "./links";
 import { discoverItems, localDay, restoredItemId } from "./discovery";
 import { graphPositions, isolatedItemIds, writingStats } from "./exploration";
 import { CloudBackup } from "./CloudBackup";
 import { WritingSoundSettings } from "./WritingSoundSettings";
-import { WritingSoundEngine, isConfirmedWritingInput, loadWritingSoundSettings, saveWritingSoundSettings, type WritingSoundSettings as WritingSoundPreferences } from "./writingSound";
+import { WritingSoundEngine, isCompositionCommit, isConfirmedWritingInput, loadWritingSoundSettings, saveWritingSoundSettings, type WritingSoundSettings as WritingSoundPreferences } from "./writingSound";
 
 type WorkType = "article" | "idea";
 type GrowthStatus = "seed" | "sprout" | "draft" | "revised" | "published";
@@ -805,6 +805,12 @@ function App() {
     }
   };
 
+  const playCompositionCommitSound = (event: ReactCompositionEvent<HTMLTextAreaElement>) => {
+    if (isCompositionCommit(event.data)) {
+      void writingSoundEngineRef.current?.play();
+    }
+  };
+
   useEffect(() => {
     if (selectedItem) {
       setDraft(makeDraft(selectedItem));
@@ -1459,6 +1465,7 @@ function App() {
               value={draft.body}
               onChange={(event) => updateDraft({ body: event.currentTarget.value })}
               onInput={playWritingSound}
+              onCompositionEnd={playCompositionCommitSound}
               spellCheck={false}
             />
           </label>

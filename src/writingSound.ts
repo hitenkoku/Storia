@@ -24,9 +24,10 @@ export const normalizeWritingSoundSettings = (value: unknown): WritingSoundSetti
   return { mode, volume };
 };
 
-export const loadWritingSoundSettings = (storage: Pick<Storage, "getItem"> = localStorage) => {
+export const loadWritingSoundSettings = (storage?: Pick<Storage, "getItem">) => {
   try {
-    const stored = storage.getItem(WRITING_SOUND_STORAGE_KEY);
+    const resolvedStorage = storage ?? localStorage;
+    const stored = resolvedStorage.getItem(WRITING_SOUND_STORAGE_KEY);
     return stored ? normalizeWritingSoundSettings(JSON.parse(stored)) : { ...DEFAULT_WRITING_SOUND_SETTINGS };
   } catch {
     return { ...DEFAULT_WRITING_SOUND_SETTINGS };
@@ -35,10 +36,11 @@ export const loadWritingSoundSettings = (storage: Pick<Storage, "getItem"> = loc
 
 export const saveWritingSoundSettings = (
   settings: WritingSoundSettings,
-  storage: Pick<Storage, "setItem"> = localStorage,
+  storage?: Pick<Storage, "setItem">,
 ) => {
   try {
-    storage.setItem(WRITING_SOUND_STORAGE_KEY, JSON.stringify(normalizeWritingSoundSettings(settings)));
+    const resolvedStorage = storage ?? localStorage;
+    resolvedStorage.setItem(WRITING_SOUND_STORAGE_KEY, JSON.stringify(normalizeWritingSoundSettings(settings)));
     return true;
   } catch {
     return false;
@@ -95,21 +97,33 @@ export class WritingSoundEngine {
       if (!preview && !this.gate.allow(now)) return;
       const context = this.ensureContext();
       if (context.state === "suspended") await context.resume();
-      if (this.settings.mode === "pen") this.playPen(context);
+      const mode = this.currentMode();
+      if (mode === "off") return;
+      if (mode === "pen") this.playPen(context);
       else this.playTypewriter(context);
     } catch {
       // Audio feedback is optional and must never interrupt text input.
-      this.silence();
+      this.stopActiveSources();
+      const mode = this.currentMode();
+      if (this.master) this.master.gain.value = mode === "off" ? 0 : this.settings.volume;
     }
   }
 
   silence() {
+    this.stopActiveSources();
     if (this.master) this.master.gain.value = 0;
+  }
+
+  private stopActiveSources() {
     for (const source of this.active) {
       try { source.stop(); } catch { /* Source may already have ended. */ }
     }
     this.active.clear();
     this.gate.reset();
+  }
+
+  private currentMode(): WritingSoundMode {
+    return this.settings.mode;
   }
 
   dispose() {

@@ -108,7 +108,7 @@ fn map_status(status: StatusCode) -> CloudError {
             "permission",
             "This account cannot write to the selected WebDAV folder.",
         ),
-        413 | 507 => CloudError::new(
+        507 => CloudError::new(
             "quota",
             "The server rejected the backup because storage is unavailable.",
         ),
@@ -296,6 +296,7 @@ mod tests {
         assert_eq!(map_status(StatusCode::UNAUTHORIZED).kind, "unauthorized");
         assert_eq!(map_status(StatusCode::FORBIDDEN).kind, "permission");
         assert_eq!(map_status(StatusCode::INSUFFICIENT_STORAGE).kind, "quota");
+        assert_eq!(map_status(StatusCode::PAYLOAD_TOO_LARGE).kind, "server");
         assert_eq!(map_status(StatusCode::INTERNAL_SERVER_ERROR).kind, "server");
     }
 }

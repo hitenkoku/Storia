@@ -7,7 +7,7 @@ const context = await browser.newContext({ viewport: { width: 1500, height: 1400
 const page = await context.newPage();
 const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
-const url = process.env.STORIA_TEST_URL ?? 'http://127.0.0.1:1432';
+const url = process.env.STORIA_TEST_URL ?? 'http://127.0.0.1:1422';
 const base = (id, patch = {}) => ({ id, title: id, type: 'idea', growthStatus: 'seed', tags: ['idea', 'rain'], body: `Body ${id}`, links: [], revisionIds: [], createdAt: '2026-01-01', updatedAt: '2026-01-01', ...patch });
 const initial = { items: [base('A', { links: [{ id: 'B', kind: '関連' }, { id: 'C', kind: '伏線', payoffStatus: 'resolved', intentNote: 'Reveal the letter sender' }], revisionIds: ['r'] }), base('B'), base('C')], revisions: [{ id: 'r', itemId: 'A', title: 'A', body: 'Historic body', tags: ['rain'], note: 'History', createdAt: '2026-01-01' }] };
 async function load(state, locale = 'en') {

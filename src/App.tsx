@@ -16,12 +16,14 @@ import {
   Tag,
   X,
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, type CompositionEvent as ReactCompositionEvent, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import { DEFAULT_LINK_KIND, LINK_KINDS, isLinkKind, normalizeLinks, toggleItemLink, changeLinkKind, inheritLinks, updateForeshadow, type ItemLink, type LinkKind } from "./links";
 import { discoverItems, localDay, restoredItemId } from "./discovery";
 import { graphPositions, isolatedItemIds, writingStats } from "./exploration";
 import { CloudBackup } from "./CloudBackup";
+import { WritingSoundSettings } from "./WritingSoundSettings";
+import { WritingSoundEngine, isCompositionCommit, isConfirmedWritingInput, loadWritingSoundSettings, saveWritingSoundSettings, type WritingSoundSettings as WritingSoundPreferences } from "./writingSound";
 
 type WorkType = "article" | "idea";
 type GrowthStatus = "seed" | "sprout" | "draft" | "revised" | "published";
@@ -683,6 +685,12 @@ function App() {
       return isLocale(stored) ? stored : "ja";
     } catch { return "ja"; }
   });
+  const [writingSound, setWritingSound] = useState<WritingSoundPreferences>(() => loadWritingSoundSettings());
+  const writingSoundEngineRef = useRef<WritingSoundEngine | null>(null);
+  if (writingSoundEngineRef.current === null) {
+    writingSoundEngineRef.current = new WritingSoundEngine();
+    writingSoundEngineRef.current.configure(writingSound);
+  }
   const selectedId = restoredItemId(workspace.items, workspace.selectedId);
   const setSelectedId = (id: string) => setWorkspace((current) => ({ ...current, selectedId: id }));
   const [saveFailed, setSaveFailed] = useState(false);
@@ -782,6 +790,26 @@ function App() {
   useEffect(() => {
     try { localStorage.setItem(LOCALE_STORAGE_KEY, locale); } catch { /* Workspace save reports storage failure. */ }
   }, [locale]);
+
+  useEffect(() => () => writingSoundEngineRef.current?.dispose(), []);
+
+  const updateWritingSound = (next: WritingSoundPreferences) => {
+    writingSoundEngineRef.current?.configure(next);
+    setWritingSound(next);
+    saveWritingSoundSettings(next);
+  };
+
+  const playWritingSound = (event: FormEvent<HTMLTextAreaElement>) => {
+    if (isConfirmedWritingInput(event.nativeEvent as InputEvent)) {
+      void writingSoundEngineRef.current?.play();
+    }
+  };
+
+  const playCompositionCommitSound = (event: ReactCompositionEvent<HTMLTextAreaElement>) => {
+    if (isCompositionCommit(event.data)) {
+      void writingSoundEngineRef.current?.play();
+    }
+  };
 
   useEffect(() => {
     if (selectedItem) {
@@ -1224,7 +1252,14 @@ function App() {
           </select>
         </label>
 
-        <CloudBackup workspace={workspace} locale={locale} />
+        <WritingSoundSettings
+          locale={locale}
+          settings={writingSound}
+          onChange={updateWritingSound}
+          onPreview={() => { void writingSoundEngineRef.current?.play(true); }}
+        />
+
+        <CloudBackup workspace={workspace} locale={locale} writingSound={writingSound} />
 
         <div className="toolbar">
           <button className="icon-button" type="button" onClick={() => createItem("article")} title={text.addArticle} aria-label={text.addArticle}>
@@ -1429,6 +1464,8 @@ function App() {
             <textarea
               value={draft.body}
               onChange={(event) => updateDraft({ body: event.currentTarget.value })}
+              onInput={playWritingSound}
+              onCompositionEnd={playCompositionCommitSound}
               spellCheck={false}
             />
           </label>

@@ -38,7 +38,7 @@ await context.addInitScript(() => {
 const page = await context.newPage();
 const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
-const url = process.env.STORIA_TEST_URL ?? 'http://127.0.0.1:1432';
+const url = process.env.STORIA_TEST_URL ?? 'http://127.0.0.1:1422';
 
 try {
   await page.goto(url);
@@ -65,6 +65,13 @@ try {
   assert.match(await backup.getByRole('alert').innerText(), /could not be reached/i);
   assert.equal(await page.evaluate(() => localStorage.getItem('storia.workspace.v1')), before);
 
+  await backup.locator('.cloud-confirm').getByRole('button', { name: 'Cancel' }).click();
+  assert.equal(await backup.getByRole('alert').count(), 0, 'cancel clears the failed pending upload and its error');
+  await backup.getByRole('button', { name: 'Back up to cloud' }).click();
+  await backup.getByText('Confirm upload', { exact: true }).waitFor();
+  await backup.getByRole('button', { name: 'Upload this backup' }).click();
+  await backup.getByRole('alert').waitFor();
+
   await page.evaluate(() => { window.__failUpload = false; });
   await backup.getByRole('button', { name: 'Retry' }).click();
   await backup.getByRole('status').waitFor();
@@ -76,6 +83,7 @@ try {
   assert.equal(artifact.version, 1);
   assert.equal(artifact.workspace.items[0].title, 'Cloud story');
   assert.equal(artifact.settings.locale, 'en');
+  assert.deepEqual(artifact.settings.writingSound, { mode: 'off', volume: 0.35 });
   assert.match(artifact.checksum, /^[a-f0-9]{64}$/);
 
   await backup.getByRole('button', { name: 'Back up to cloud' }).click();
@@ -90,7 +98,10 @@ try {
   await backup.getByRole('status').waitFor();
 
   await backup.getByRole('button', { name: 'Reauthenticate' }).click();
-  assert.equal(await backup.getByLabel('Password / app password').inputValue(), '');
+  await backup.getByLabel('Password / app password').fill('discard-me');
+  await backup.getByRole('button', { name: 'Cancel' }).click();
+  await backup.getByRole('button', { name: 'Reauthenticate' }).click();
+  assert.equal(await backup.getByLabel('Password / app password').inputValue(), '', 'cancel clears the typed password');
   await backup.getByRole('button', { name: 'Cancel' }).click();
   await backup.getByRole('button', { name: 'Disconnect' }).click();
   await backup.getByRole('button', { name: 'Connect', exact: true }).waitFor();

@@ -18,7 +18,7 @@ The UI uses the `CloudBackupProvider` boundary in `src/cloud.ts`, while serializ
 
 - every workspace item, including body, tags, growth status, continuation note, links, and directional link metadata;
 - every revision and the selected item;
-- non-secret settings, currently the interface locale;
+- non-secret settings, currently the interface locale and optional writing-sound preference;
 - a creation timestamp and SHA-256 checksum over the canonical payload.
 
 Credentials and provider configuration are excluded from the artifact. WebDAV credentials, including the endpoint and username, are serialized only inside the operating system credential store entry `com.hitenkoku.storia.cloud-backup` / `webdav`. The Windows build uses Windows Credential Manager; supported macOS and Linux builds use their native keychain service through `keyring`.

@@ -1,7 +1,8 @@
 import { CloudUpload, LogOut, RefreshCw, ShieldCheck } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { backupFilename, createBackup } from "./backup";
 import { webDavProvider, type ConnectionStatus } from "./cloud";
+import type { WritingSoundSettings } from "./writingSound";
 
 type Locale = "ja" | "en";
 type PendingBackup = { filename: string; content: string; bytes: number; itemCount: number };
@@ -95,7 +96,7 @@ const failureText = (error: unknown, locale: Locale) => {
   return failure.message || copy.unknownError;
 };
 
-export function CloudBackup({ workspace, locale }: { workspace: { items: unknown[] }; locale: Locale }) {
+export function CloudBackup({ workspace, locale, writingSound }: { workspace: { items: unknown[] }; locale: Locale; writingSound: WritingSoundSettings }) {
   const text = COPY[locale];
   const desktop = isDesktop();
   const [status, setStatus] = useState<ConnectionStatus>({ connected: false });
@@ -107,24 +108,32 @@ export function CloudBackup({ workspace, locale }: { workspace: { items: unknown
   const [error, setError] = useState("");
   const [pending, setPending] = useState<PendingBackup | null>(null);
   const [completed, setCompleted] = useState<{ at: string; destination: string } | null>(null);
+  const connectionGeneration = useRef(0);
 
   useEffect(() => {
     if (!desktop) return;
+    const generation = ++connectionGeneration.current;
     webDavProvider.status()
       .then((next) => {
+        if (generation !== connectionGeneration.current) return;
         setStatus(next);
         setEndpoint(next.endpoint ?? "");
         setUsername(next.username ?? "");
         setShowCredentials(!next.connected);
       })
       .catch((cause) => {
+        if (generation !== connectionGeneration.current) return;
         setShowCredentials(true);
         setError(failureText(cause, locale));
       });
+    return () => {
+      if (generation === connectionGeneration.current) connectionGeneration.current += 1;
+    };
   }, [desktop]);
 
   const connect = async (event: FormEvent) => {
     event.preventDefault();
+    connectionGeneration.current += 1;
     setBusy(true);
     setError("");
     try {
@@ -140,6 +149,7 @@ export function CloudBackup({ workspace, locale }: { workspace: { items: unknown
   };
 
   const disconnect = async () => {
+    connectionGeneration.current += 1;
     setBusy(true);
     setError("");
     try {
@@ -156,14 +166,18 @@ export function CloudBackup({ workspace, locale }: { workspace: { items: unknown
   };
 
   const prepare = async () => {
+    setBusy(true);
     setError("");
     setCompleted(null);
     try {
       const filename = backupFilename();
-      const content = await createBackup(workspace, { locale });
-      setPending({ filename, content, bytes: new TextEncoder().encode(content).byteLength, itemCount: workspace.items.length });
+      const itemCount = workspace.items.length;
+      const content = await createBackup(workspace, { locale, writingSound });
+      setPending({ filename, content, bytes: new TextEncoder().encode(content).byteLength, itemCount });
     } catch (cause) {
       setError(failureText(cause, locale));
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -207,7 +221,7 @@ export function CloudBackup({ workspace, locale }: { workspace: { items: unknown
           <small>{text.secure}</small>
           <div className="cloud-actions">
             <button className="cloud-primary" type="submit" disabled={busy}>{text.connect}</button>
-            {status.connected && <button type="button" onClick={() => setShowCredentials(false)}>{text.cancel}</button>}
+            {status.connected && <button type="button" onClick={() => { setPassword(""); setError(""); setShowCredentials(false); }} disabled={busy}>{text.cancel}</button>}
           </div>
         </form>
       )}
@@ -227,7 +241,7 @@ export function CloudBackup({ workspace, locale }: { workspace: { items: unknown
           </dl>
           <div className="cloud-actions">
             <button className="cloud-primary" type="button" onClick={upload} disabled={busy}>{busy ? text.uploading : text.upload}</button>
-            <button type="button" onClick={() => setPending(null)} disabled={busy}>{text.cancel}</button>
+            <button type="button" onClick={() => { setPending(null); setError(""); }} disabled={busy}>{text.cancel}</button>
           </div>
         </section>
       )}

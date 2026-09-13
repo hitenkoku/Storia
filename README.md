@@ -31,6 +31,7 @@ Add a “next writing step” note before you stop. Storia restores the piece yo
 - Japanese and English interface
 - Markdown editor with live preview
 - Focus mode with keyboard exit
+- Optional pen and typewriter feedback sounds with local volume settings
 - Article and idea growth stages
 - Typed relationships and a visual story graph
 - Foreshadowing intent and payoff tracking
@@ -39,6 +40,7 @@ Add a “next writing step” note before you stop. Storia restores the piece yo
 - Horizontal and vertical reader previews
 - Local writing statistics, including character count and a 400-character manuscript-page estimate
 - Per-item continuation notes and local material discovery
+- Explicit, versioned WebDAV workspace backups with OS-protected credentials
 
 ## Download
 
@@ -55,9 +57,9 @@ Storia is in early preview. The first packages are not backed by paid Windows or
 
 ## Data and privacy
 
-Storia works locally and does not send writing to a server. The current preview stores its workspace in the app WebView's local storage.
+Storia stores its workspace locally in the app WebView. It sends writing outside the device only when you configure a WebDAV folder, choose **Back up to cloud**, review the destination, and confirm the upload. WebDAV credentials stay in the operating system credential store.
 
-Cloud sync, automatic backups, and file import/export are not available yet. Keep a separate copy of important manuscripts while evaluating the preview. Clearing the app's site data or uninstalling it may remove the workspace.
+Cloud sync, automatic backups, and file import/export are not available yet. Manual WebDAV backup is available in the desktop app. Clearing the app's site data or uninstalling it may remove the local workspace, so keep verified backups of important manuscripts.
 
 ## Development
 

@@ -10,7 +10,7 @@ Storia 0.2 introduces an explicit, one-shot backup of the whole workspace. It is
 | Dropbox | OAuth application, redirect URI, scoped app folder, and provider review for distribution | Good future adapter with the same publisher dependency |
 | WebDAV | User supplies an HTTPS folder URL and an account or app password | Selected: works with user-controlled services and validates the full backup workflow without a Storia-operated cloud service |
 
-The UI uses the `CloudBackupProvider` boundary in `src/cloud.ts`, while serialization stays provider-neutral in `src/backup.ts`. A later Google Drive or Dropbox adapter can reuse the same versioned artifact, confirmation UI, integrity check, and error categories.
+WebDAV command calls implement the `CloudBackupProvider` boundary in `src/cloud.ts`, while serialization stays provider-neutral in `src/backup.ts`. The current connection and confirmation component is WebDAV-specific. A later Google Drive or Dropbox adapter can reuse the versioned artifact, integrity check, and error categories, but will also need provider selection and connection UI plus extraction or adaptation of the shared confirmation flow.
 
 ## Backup artifact
 

@@ -32,6 +32,17 @@ const hasWorkspaceShape = (value: unknown): value is { items: unknown[]; revisio
   Array.isArray((value as { items?: unknown }).items) &&
   Array.isArray((value as { revisions?: unknown }).revisions);
 
+const hasSettingsShape = (value: unknown): value is BackupSettings => {
+  if (typeof value !== "object" || value === null) return false;
+  const settings = value as Partial<BackupSettings>;
+  if (settings.locale !== "ja" && settings.locale !== "en") return false;
+  if (settings.writingSound === undefined) return true;
+  if (typeof settings.writingSound !== "object" || settings.writingSound === null) return false;
+  const { mode, volume } = settings.writingSound;
+  return (mode === "off" || mode === "pen" || mode === "typewriter") &&
+    typeof volume === "number" && Number.isFinite(volume) && volume >= 0 && volume <= 1;
+};
+
 export const createBackup = async <T>(workspace: T, settings: BackupSettings, now = new Date()) => {
   const createdAt = now.toISOString();
   const payload = canonicalPayload(createdAt, workspace, settings);
@@ -59,7 +70,7 @@ export const parseBackup = async <T = unknown>(source: string): Promise<StoriaBa
   if (backup.version !== BACKUP_VERSION) throw new Error("unsupported_version");
   if (typeof backup.createdAt !== "string" || !Number.isFinite(Date.parse(backup.createdAt))) throw new Error("invalid_backup");
   if (!hasWorkspaceShape(backup.workspace)) throw new Error("invalid_workspace");
-  if (!backup.settings || (backup.settings.locale !== "ja" && backup.settings.locale !== "en")) throw new Error("invalid_settings");
+  if (!hasSettingsShape(backup.settings)) throw new Error("invalid_settings");
   if (typeof backup.checksum !== "string") throw new Error("invalid_checksum");
   const expected = await sha256(canonicalPayload(backup.createdAt, backup.workspace, backup.settings));
   if (backup.checksum !== expected) throw new Error("checksum_mismatch");

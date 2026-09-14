@@ -31,7 +31,7 @@ Optional browser integration check uses an isolated, headless Edge context, neve
 
 ```sh
 npm install --no-save --package-lock=false playwright
-npm run dev -- --host 127.0.0.1 --port 1432
+npm run dev -- --host 127.0.0.1 --port 1422
 node tests/resume-discovery.browser.mjs
 ```
 

@@ -35,6 +35,19 @@ test('tampering and malformed or future formats are rejected', async () => {
   await assert.rejects(parseBackup(JSON.stringify({ ...valid, version: 2 })), /unsupported_version/);
 });
 
+test('invalid optional writing-sound settings are rejected even with a valid checksum', async () => {
+  for (const writingSound of [
+    { mode: 'bogus', volume: 0.5 },
+    { mode: 'pen', volume: -0.01 },
+    { mode: 'typewriter', volume: 1.01 },
+    { mode: 'off', volume: null },
+    { volume: 0.5 },
+  ]) {
+    const source = await createBackup(workspace, { locale: 'en', writingSound });
+    await assert.rejects(parseBackup(source), /invalid_settings/);
+  }
+});
+
 test('legacy workspace fields are preserved without mutation', async () => {
   const legacy = { items: [{ id: 'old', type: 'idea', title: 'legacy', tags: [], body: '', linkedIds: ['next'], revisionIds: [], createdAt: '', updatedAt: '' }], revisions: [] };
   const before = structuredClone(legacy);

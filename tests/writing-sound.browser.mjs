@@ -61,8 +61,9 @@ try {
     element.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertCompositionText', data: 'か', isComposing: true }));
     element.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertCompositionText', data: 'かき', isComposing: true }));
     element.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '確定' }));
+    element.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: '確定', isComposing: false }));
   });
-  assert.equal(await page.evaluate(() => window.__audioStarts), 3, 'Chromium-order IME commit plays once');
+  assert.equal(await page.evaluate(() => window.__audioStarts), 3, 'IME commit signals are deduplicated');
 
   await page.waitForTimeout(40);
   await body.evaluate((element) => {

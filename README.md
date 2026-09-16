@@ -44,7 +44,7 @@ Add a “next writing step” note before you stop. Fumitoria restores the piece
 
 ## Download
 
-Download the latest preview from [GitHub Releases](https://github.com/hitenkoku/Storia/releases).
+The project has been renamed from Storia to Fumitoria. The published v0.1.0 preview packages are still named **Storia**; see [GitHub Releases](https://github.com/hitenkoku/Storia/releases) and the original [Storia v0.1.0 release notes](docs/releases/v0.1.0.md). This rename does not create a new release or change the version.
 
 Choose the package for your system:
 
@@ -57,13 +57,19 @@ Fumitoria is in early preview. The first packages are not backed by paid Windows
 
 ## Data and privacy
 
-Fumitoria was previously named Storia. The app identifier, local storage keys, backup format, and OS credential-store service retain their original identifiers so existing workspaces, settings, credentials, and backups remain compatible. New backup filenames use the `fumitoria-backup-` prefix. GitHub repository and website URLs retain `Storia`.
+Fumitoria was previously named Storia. The app identifier, local storage keys, backup format, and OS credential-store service retain their original identifiers to preserve compatibility with existing workspaces, settings, credentials, and backups. New backup filenames use the `fumitoria-backup-` prefix. GitHub repository and website URLs retain `Storia`.
 
 Fumitoria stores its workspace locally in the app WebView. It sends writing outside the device only when you configure a WebDAV folder, choose **Back up to cloud**, review the destination, and confirm the upload. WebDAV credentials stay in the operating system credential store.
 
 Cloud sync, automatic backups, and file import/export are not available yet. Manual WebDAV backup is available in the desktop app. Clearing the app's site data or uninstalling it may remove the local workspace, so keep verified backups of important manuscripts.
 
+Installer upgrades from Storia to Fumitoria have not been verified end to end on real machines, including WiX MSI and NSIS. Preserving identifiers alone does not establish that every installer upgrade path works.
+
 ## Development
+
+### Rename compatibility
+
+`bundle.windows.wix.upgradeCode` is pinned to `1f16aa03-8678-5f0b-beea-b79db0556a3f`, the previous Storia MSI identity (UUIDv5 of `Storia.exe.app.x64` in the DNS namespace). This follows [Tauri's upgradeCode guidance](https://v2.tauri.app/reference/config/#upgradecode). Keep this value across future releases. Verify the configured value with `npm run tauri -- inspect wix-upgrade-code`.
 
 ### Requirements
 

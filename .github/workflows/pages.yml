@@ -1,4 +1,4 @@
-name: Deploy Storia site to GitHub Pages
+name: Deploy Fumitoria site to GitHub Pages
 
 on:
   push:

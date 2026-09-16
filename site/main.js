@@ -11,12 +11,12 @@ function setLanguage(language) {
   translatable.forEach((element) => { element.innerHTML = element.dataset[language]; });
   languageButton.textContent = isEnglish ? "日本語" : "EN";
   languageButton.setAttribute("aria-pressed", String(isEnglish));
-  try { localStorage.setItem("fumitoria.site.locale", language); } catch {}
+  try { localStorage.setItem("storia.site.locale", language); } catch {}
 }
 
 let preferredLanguage = "ja";
 try {
-  const savedLanguage = localStorage.getItem("fumitoria.site.locale") || localStorage.getItem("storia.site.locale");
+  const savedLanguage = localStorage.getItem("storia.site.locale");
   preferredLanguage = savedLanguage === "ja" || savedLanguage === "en"
     ? savedLanguage
     : (navigator.language.startsWith("ja") ? "ja" : "en");

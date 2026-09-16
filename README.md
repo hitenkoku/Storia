@@ -1,10 +1,10 @@
-# Storia
+# Fumitoria（フミトリア）
 
 **Turn sparks into stories.**
 
-Storia is a desktop writing workspace for people who build stories from fragments: a line of dialogue, a half-formed scene, a character question, or a thread that may become foreshadowing later.
+Fumitoria is a desktop writing workspace for people who build stories from fragments: a line of dialogue, a half-formed scene, a character question, or a thread that may become foreshadowing later.
 
-Instead of treating notes, drafts, and revisions as separate piles, Storia keeps their relationships visible. Capture an idea, connect it to the story, grow it into a draft, and leave yourself a clear place to continue next time.
+Instead of treating notes, drafts, and revisions as separate piles, Fumitoria keeps their relationships visible. Capture an idea, connect it to the story, grow it into a draft, and leave yourself a clear place to continue next time.
 
 [Website](https://hitenkoku.github.io/Storia/) · [Releases](https://github.com/hitenkoku/Storia/releases) · [Issues](https://github.com/hitenkoku/Storia/issues)
 
@@ -24,7 +24,7 @@ Turn a promising idea into an article while preserving its relationships. Write 
 
 ### Leave a way back in
 
-Add a “next writing step” note before you stop. Storia restores the piece you were working on and surfaces dormant fragments, isolated ideas, and material with shared tags so that the next session has a natural starting point.
+Add a “next writing step” note before you stop. Fumitoria restores the piece you were working on and surfaces dormant fragments, isolated ideas, and material with shared tags so that the next session has a natural starting point.
 
 ## Highlights
 
@@ -53,11 +53,13 @@ Choose the package for your system:
 - **macOS Intel:** the `x86_64` `.dmg`
 - **Linux:** `.AppImage` or `.deb`
 
-Storia is in early preview. The first packages are not backed by paid Windows or Apple distribution certificates. Your operating system may therefore ask you to confirm that you trust the application. macOS builds use an ad-hoc signature, but macOS may still require approval in Privacy & Security.
+Fumitoria is in early preview. The first packages are not backed by paid Windows or Apple distribution certificates. Your operating system may therefore ask you to confirm that you trust the application. macOS builds use an ad-hoc signature, but macOS may still require approval in Privacy & Security.
 
 ## Data and privacy
 
-Storia stores its workspace locally in the app WebView. It sends writing outside the device only when you configure a WebDAV folder, choose **Back up to cloud**, review the destination, and confirm the upload. WebDAV credentials stay in the operating system credential store.
+Fumitoria was previously named Storia. The app identifier, local storage keys, backup format, and OS credential-store service retain their original identifiers so existing workspaces, settings, credentials, and backups remain compatible. New backup filenames use the `fumitoria-backup-` prefix. GitHub repository and website URLs retain `Storia`.
+
+Fumitoria stores its workspace locally in the app WebView. It sends writing outside the device only when you configure a WebDAV folder, choose **Back up to cloud**, review the destination, and confirm the upload. WebDAV credentials stay in the operating system credential store.
 
 Cloud sync, automatic backups, and file import/export are not available yet. Manual WebDAV backup is available in the desktop app. Clearing the app's site data or uninstalling it may remove the local workspace, so keep verified backups of important manuscripts.
 
@@ -94,8 +96,8 @@ The test suite covers graph exploration, local discovery, relationship metadata,
 
 ## Project status
 
-Storia is an evolving prototype. Feedback and focused bug reports are welcome in [GitHub Issues](https://github.com/hitenkoku/Storia/issues).
+Fumitoria is an evolving prototype. Feedback and focused bug reports are welcome in [GitHub Issues](https://github.com/hitenkoku/Storia/issues).
 
 ## License
 
-Storia is available under the [MIT License](LICENSE).
+Fumitoria is available under the [MIT License](LICENSE).

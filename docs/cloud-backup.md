@@ -1,6 +1,6 @@
 # Manual cloud backup
 
-Storia 0.2 introduces an explicit, one-shot backup of the whole workspace. It is a backup operation, not synchronization: Storia never uploads in the background and never changes local data when an upload fails.
+Fumitoria 0.2 introduces an explicit, one-shot backup of the whole workspace. It is a backup operation, not synchronization: Fumitoria never uploads in the background and never changes local data when an upload fails.
 
 ## Initial provider decision
 
@@ -8,7 +8,7 @@ Storia 0.2 introduces an explicit, one-shot backup of the whole workspace. It is
 | --- | --- | --- |
 | Google Drive | OAuth application, redirect URI, consent configuration, and provider review for broad distribution | Good future adapter, but the release would depend on a publisher-managed cloud application |
 | Dropbox | OAuth application, redirect URI, scoped app folder, and provider review for distribution | Good future adapter with the same publisher dependency |
-| WebDAV | User supplies an HTTPS folder URL and an account or app password | Selected: works with user-controlled services and validates the full backup workflow without a Storia-operated cloud service |
+| WebDAV | User supplies an HTTPS folder URL and an account or app password | Selected: works with user-controlled services and validates the full backup workflow without a Fumitoria-operated cloud service |
 
 WebDAV command calls implement the `CloudBackupProvider` boundary in `src/cloud.ts`, while serialization stays provider-neutral in `src/backup.ts`. The current connection and confirmation component is WebDAV-specific. A later Google Drive or Dropbox adapter can reuse the versioned artifact, integrity check, and error categories, but will also need provider selection and connection UI plus extraction or adaptation of the shared confirmation flow.
 
@@ -23,14 +23,14 @@ WebDAV command calls implement the `CloudBackupProvider` boundary in `src/cloud.
 
 Credentials and provider configuration are excluded from the artifact. WebDAV credentials, including the endpoint and username, are serialized only inside the operating system credential store entry `com.hitenkoku.storia.cloud-backup` / `webdav`. The Windows build uses Windows Credential Manager; supported macOS and Linux builds use their native keychain service through `keyring`.
 
-Backup filenames include UTC milliseconds and sort chronologically, for example `storia-backup-20260912T123456789Z.json`. Milliseconds prevent two backups prepared within one second from replacing each other.
+Backup filenames include UTC milliseconds and sort chronologically, for example `fumitoria-backup-20260912T123456789Z.json`. Milliseconds prevent two backups prepared within one second from replacing each other.
 
 ## User flow
 
 1. Open **Cloud backup** in the library panel.
-2. Enter an HTTPS WebDAV folder URL, username, and password or app password. Storia validates the folder with `PROPFIND` before storing the credential.
-3. Choose **Back up to cloud**. Storia prepares an immutable snapshot and shows its item count, encoded size, filename, and destination.
-4. Confirm the upload. Storia sends one JSON file with `PUT` and reports the timestamp and exact destination.
+2. Enter an HTTPS WebDAV folder URL, username, and password or app password. Fumitoria validates the folder with `PROPFIND` before storing the credential.
+3. Choose **Back up to cloud**. Fumitoria prepares an immutable snapshot and shows its item count, encoded size, filename, and destination.
+4. Confirm the upload. Fumitoria sends one JSON file with `PUT` and reports the timestamp and exact destination.
 
 Authentication, write permission, storage quota, offline, server, invalid configuration, and credential-store failures are shown separately. A failed upload keeps the prepared snapshot available through reauthentication and retry, and does not mutate the workspace. WebDAV redirects are rejected so the confirmed HTTPS destination cannot silently change.
 

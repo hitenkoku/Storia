@@ -58,7 +58,7 @@ try {
   await backup.getByRole('button', { name: 'Back up to cloud' }).click();
   await backup.getByText('Confirm upload', { exact: true }).waitFor();
   assert.match(await backup.innerText(), /Cloud story|1 items/);
-  assert.match(await backup.innerText(), /storia-backup-\d{8}T\d{9}Z\.json/);
+  assert.match(await backup.innerText(), /fumitoria-backup-\d{8}T\d{9}Z\.json/);
 
   await backup.getByRole('button', { name: 'Upload this backup' }).click();
   await backup.getByRole('alert').waitFor();

@@ -1,6 +1,6 @@
 # Writing sounds
 
-Storia can play optional, short feedback sounds for confirmed input in the body editor. The setting is off for new and existing users. Mode and volume are stored locally under `storia.writing-sound.v1` and are included as non-secret settings in cloud backups.
+Fumitoria can play optional, short feedback sounds for confirmed input in the body editor. The setting is off for new and existing users. Mode and volume are stored locally under `storia.writing-sound.v1` and are included as non-secret settings in cloud backups.
 
 ## Interaction rules
 
@@ -16,4 +16,4 @@ The setting component uses native `select` and `range` controls so it remains ke
 
 ## Audio source and license
 
-No recorded audio or third-party sound asset is distributed. Both sounds are synthesized at playback with the Web Audio API from a short random-noise buffer, a filter, and a gain envelope in `src/writingSound.ts`. The synthesis code is original Storia source and is covered by the repository's MIT License.
+No recorded audio or third-party sound asset is distributed. Both sounds are synthesized at playback with the Web Audio API from a short random-noise buffer, a filter, and a gain envelope in `src/writingSound.ts`. The synthesis code is original Fumitoria source and is covered by the repository's MIT License.

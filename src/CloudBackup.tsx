@@ -12,9 +12,9 @@ const COPY = {
   ja: {
     title: "クラウドバックアップ",
     description: "原稿・リンク・履歴・設定を、手動でWebDAVへ保存します。",
-    desktopOnly: "バックアップはStoriaデスクトップ版で利用できます。",
+    desktopOnly: "バックアップはFumitoriaデスクトップ版で利用できます。",
     endpoint: "WebDAVフォルダーURL",
-    endpointPlaceholder: "https://cloud.example.com/remote.php/dav/files/me/Storia",
+    endpointPlaceholder: "https://cloud.example.com/remote.php/dav/files/me/Fumitoria",
     username: "ユーザー名",
     password: "パスワード / アプリパスワード",
     connect: "接続する",
@@ -49,9 +49,9 @@ const COPY = {
   en: {
     title: "Cloud backup",
     description: "Manually save writing, links, history, and settings to WebDAV.",
-    desktopOnly: "Cloud backup is available in the Storia desktop app.",
+    desktopOnly: "Cloud backup is available in the Fumitoria desktop app.",
     endpoint: "WebDAV folder URL",
-    endpointPlaceholder: "https://cloud.example.com/remote.php/dav/files/me/Storia",
+    endpointPlaceholder: "https://cloud.example.com/remote.php/dav/files/me/Fumitoria",
     username: "Username",
     password: "Password / app password",
     connect: "Connect",

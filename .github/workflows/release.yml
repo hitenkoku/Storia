@@ -1,4 +1,4 @@
-name: Build Storia release draft
+name: Build Fumitoria release draft
 
 on:
   workflow_dispatch:
@@ -67,9 +67,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: v__VERSION__
-          releaseName: Storia v__VERSION__ — Preview
+          releaseName: Fumitoria v__VERSION__ — Preview
           releaseBody: |
-            Storia's first public preview brings ideas, drafts, relationships, and revision history into one writing workspace.
+            Fumitoria's first public preview brings ideas, drafts, relationships, and revision history into one writing workspace.
 
             Highlights:
             - Capture fragments and grow ideas into articles.

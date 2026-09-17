@@ -132,7 +132,7 @@ fn client() -> Result<reqwest::Client, CloudError> {
         .redirect(reqwest::redirect::Policy::none())
         .connect_timeout(Duration::from_secs(10))
         .timeout(Duration::from_secs(30))
-        .user_agent(concat!("Storia/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!("Fumitoria/", env!("CARGO_PKG_VERSION")))
         .build()
         .map_err(|_| CloudError::new("server", "Could not initialize the WebDAV client."))
 }
@@ -281,12 +281,12 @@ mod tests {
     fn destination_encodes_filename_and_keeps_folder_path() {
         let result = destination_url(
             "https://cloud.example.test/dav/backups/",
-            "storia-backup-20260912T123456789Z.json",
+            "fumitoria-backup-20260912T123456789Z.json",
         )
         .unwrap();
         assert_eq!(
             result.as_str(),
-            "https://cloud.example.test/dav/backups/storia-backup-20260912T123456789Z.json"
+            "https://cloud.example.test/dav/backups/fumitoria-backup-20260912T123456789Z.json"
         );
         assert!(destination_url("https://cloud.example.test/dav", "../secret.json").is_err());
     }

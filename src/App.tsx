@@ -63,7 +63,7 @@ type Draft = {
   note: string;
 };
 
-type StoriaState = {
+type FumitoriaState = {
   selectedId?: string;
   items: WorkItem[];
   revisions: Revision[];
@@ -158,7 +158,7 @@ const UI_TEXT = {
     noMaterials: "今日の候補はまだありません。新しい断片を残してみましょう。",
     saveFailed: "保存できませんでした。画面を閉じずに再試行してください。",
     retrySave: "保存を再試行",
-    libraryAriaLabel: "Storia ライブラリ",
+    libraryAriaLabel: "Fumitoria ライブラリ",
     localeLabel: "言語",
     addArticle: "記事を追加",
     addIdea: "アイデアを追加",
@@ -186,7 +186,7 @@ const UI_TEXT = {
     preview: "プレビュー",
     graph: "グラフ",
     spark: "発想",
-    storiaGraph: "Storia グラフ",
+    fumitoriaGraph: "Fumitoria グラフ",
     islands: "孤島（未接続の素材）",
     noIslands: "すべての素材が接続されています。",
     graphHelp: "実線は素材間の関係、破線は履歴。上下・左右にスクロールできます。",
@@ -249,7 +249,7 @@ const UI_TEXT = {
     noMaterials: "No candidates today. Capture a new fragment to begin.",
     saveFailed: "Could not save. Keep this window open and retry.",
     retrySave: "Retry save",
-    libraryAriaLabel: "Storia library",
+    libraryAriaLabel: "Fumitoria library",
     localeLabel: "Language",
     addArticle: "Add article",
     addIdea: "Add idea",
@@ -277,7 +277,7 @@ const UI_TEXT = {
     preview: "Preview",
     graph: "Graph",
     spark: "Spark",
-    storiaGraph: "Storia graph",
+    fumitoriaGraph: "Fumitoria graph",
     islands: "Islands (unconnected material)",
     noIslands: "All material is connected.",
     graphHelp: "Solid lines connect material; dashed lines show history. Scroll horizontally or vertically to explore.",
@@ -481,7 +481,7 @@ const isStartTemplate = (value: unknown): value is StartTemplate =>
 const isLocale = (value: unknown): value is Locale =>
   typeof value === "string" && LOCALES.includes(value as Locale);
 
-const normalizeState = (state: StoriaState): StoriaState => ({
+const normalizeState = (state: FumitoriaState): FumitoriaState => ({
   ...state,
   items: state.items.map(
     (item): WorkItem => ({
@@ -502,7 +502,7 @@ const normalizeState = (state: StoriaState): StoriaState => ({
   ),
 });
 
-const seedState = (): StoriaState => {
+const seedState = (): FumitoriaState => {
   const createdAt = nowIso();
   const articleId = newId();
   const ideaId = newId();
@@ -670,11 +670,11 @@ const buildLineDiff = (before: string, after: string): DiffLine[] => {
 };
 
 function App() {
-  const [workspace, setWorkspace] = useState<StoriaState>(() => {
+  const [workspace, setWorkspace] = useState<FumitoriaState>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) return seedState();
-      return normalizeState(JSON.parse(stored) as StoriaState);
+      return normalizeState(JSON.parse(stored) as FumitoriaState);
     } catch {
       return seedState();
     }
@@ -1231,7 +1231,7 @@ function App() {
         <div className="brand-block">
           <BookOpen size={28} aria-hidden="true" />
           <div>
-            <h1>Storia</h1>
+            <h1>Fumitoria</h1>
             <p>{text.brandSubtitle}</p>
           </div>
         </div>
@@ -1526,8 +1526,8 @@ function App() {
             <div className="graph-legend">
               {LINK_KINDS.map((kind, index) => <span key={kind}><i className={`relation-color relation-${index}`} />{linkKindLabels[kind]}</span>)}
             </div>
-            <div className="graph-scroll" tabIndex={0} role="region" aria-label={text.storiaGraph}>
-            <svg width={graphLayout.width} height={graphLayout.height} viewBox={`0 0 ${graphLayout.width} ${graphLayout.height}`} aria-label={text.storiaGraph}>
+            <div className="graph-scroll" tabIndex={0} role="region" aria-label={text.fumitoriaGraph}>
+            <svg width={graphLayout.width} height={graphLayout.height} viewBox={`0 0 ${graphLayout.width} ${graphLayout.height}`} aria-label={text.fumitoriaGraph}>
               {graphEdges.map((edge, index) => {
                 const from = graphLayout.positions.get(edge.from);
                 const to = graphLayout.positions.get(edge.to);

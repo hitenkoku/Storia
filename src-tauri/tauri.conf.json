@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Storia",
+  "productName": "Fumitoria",
   "version": "0.1.0",
   "identifier": "com.hitenkoku.storia",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Storia",
+        "title": "Fumitoria",
         "width": 1280,
         "height": 820
       }
@@ -33,6 +33,11 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "wix": {
+        "upgradeCode": "1f16aa03-8678-5f0b-beea-b79db0556a3f"
+      }
+    }
   }
 }

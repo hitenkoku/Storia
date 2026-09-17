@@ -9,7 +9,7 @@ export type BackupSettings = {
   };
 };
 
-export type StoriaBackup<T = unknown> = {
+export type FumitoriaBackup<T = unknown> = {
   format: typeof BACKUP_FORMAT;
   version: typeof BACKUP_VERSION;
   createdAt: string;
@@ -46,7 +46,7 @@ const hasSettingsShape = (value: unknown): value is BackupSettings => {
 export const createBackup = async <T>(workspace: T, settings: BackupSettings, now = new Date()) => {
   const createdAt = now.toISOString();
   const payload = canonicalPayload(createdAt, workspace, settings);
-  const backup: StoriaBackup<T> = {
+  const backup: FumitoriaBackup<T> = {
     format: BACKUP_FORMAT,
     version: BACKUP_VERSION,
     createdAt,
@@ -57,7 +57,7 @@ export const createBackup = async <T>(workspace: T, settings: BackupSettings, no
   return `${JSON.stringify(backup, null, 2)}\n`;
 };
 
-export const parseBackup = async <T = unknown>(source: string): Promise<StoriaBackup<T>> => {
+export const parseBackup = async <T = unknown>(source: string): Promise<FumitoriaBackup<T>> => {
   let value: unknown;
   try {
     value = JSON.parse(source);
@@ -65,7 +65,7 @@ export const parseBackup = async <T = unknown>(source: string): Promise<StoriaBa
     throw new Error("invalid_json");
   }
   if (typeof value !== "object" || value === null) throw new Error("invalid_backup");
-  const backup = value as Partial<StoriaBackup<T>>;
+  const backup = value as Partial<FumitoriaBackup<T>>;
   if (backup.format !== BACKUP_FORMAT) throw new Error("invalid_format");
   if (backup.version !== BACKUP_VERSION) throw new Error("unsupported_version");
   if (typeof backup.createdAt !== "string" || !Number.isFinite(Date.parse(backup.createdAt))) throw new Error("invalid_backup");
@@ -74,10 +74,10 @@ export const parseBackup = async <T = unknown>(source: string): Promise<StoriaBa
   if (typeof backup.checksum !== "string") throw new Error("invalid_checksum");
   const expected = await sha256(canonicalPayload(backup.createdAt, backup.workspace, backup.settings));
   if (backup.checksum !== expected) throw new Error("checksum_mismatch");
-  return backup as StoriaBackup<T>;
+  return backup as FumitoriaBackup<T>;
 };
 
 export const backupFilename = (date = new Date()) => {
   const stamp = date.toISOString().replace(/[-:.]/g, "");
-  return `storia-backup-${stamp}.json`;
+  return `fumitoria-backup-${stamp}.json`;
 };

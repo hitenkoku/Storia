@@ -69,6 +69,8 @@ Installer upgrades from Storia to Fumitoria have not been verified end to end on
 
 ### Rename compatibility
 
+See [rename compatibility](docs/rename-compatibility.md) for retained identifiers, historical release handling, and native upgrade verification limits.
+
 `bundle.windows.wix.upgradeCode` is pinned to `1f16aa03-8678-5f0b-beea-b79db0556a3f`, the previous Storia MSI identity (UUIDv5 of `Storia.exe.app.x64` in the DNS namespace). This follows [Tauri's upgradeCode guidance](https://v2.tauri.app/reference/config/#upgradecode). Keep this value across future releases. Verify the configured value with `npm run tauri -- inspect wix-upgrade-code`.
 
 ### Requirements
